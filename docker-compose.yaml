@@ -1,0 +1,97 @@
+services:
+  # Streamlit
+  streamlit:
+    image: python:3.11-slim
+    command: >
+      bash -c "
+        pip install -r /app/requirements.txt &&
+        streamlit run /app/app.py --server.address 0.0.0.0
+      "
+    ports:
+      - "${STREAMLIT_PORT}:8501"
+    volumes:
+      - ./streamlit_app:/app
+    working_dir: /app
+    env_file:
+      - .env
+    environment:
+      # Configure AWS SDK to use LocalStack (container-to-container communication)
+      - AWS_ENDPOINT_URL_S3=http://localstack:${LOCALSTACK_PORT}
+    depends_on:
+      - localstack
+
+  # LocalStack for AWS services emulation (S3, etc.)
+  localstack:
+    image: localstack/localstack:latest
+    ports:
+      - "${LOCALSTACK_PORT}:4566"  # LocalStack main port
+      - "${LOCALSTACK_PORT_RANGE_START}-${LOCALSTACK_PORT_RANGE_END}:4510-4559"  # External service ports
+    env_file:
+      - .env
+    environment:
+      - SERVICES=${LOCALSTACK_SERVICES}
+      - DEBUG=${LOCALSTACK_DEBUG}
+      - PERSISTENCE=${LOCALSTACK_PERSISTENCE}
+      - LAMBDA_EXECUTOR=docker
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "./data/localstack:/var/lib/localstack"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  ray-head:
+    image: ${RAY_IMAGE}
+    ports:
+      - "${PORT}:${PORT}"
+      - "${DASHBOARD_PORT}:${DASHBOARD_PORT}"
+      - "${HEAD_NODE_PORT}:${HEAD_NODE_PORT}"
+    env_file:
+      - .env
+    environment:
+      - AWS_ENDPOINT_URL_S3=http://localstack:${LOCALSTACK_PORT}
+    command: bash -c "ray start --head --dashboard-port=${DASHBOARD_PORT} --port=${PORT} --dashboard-host=0.0.0.0 --disable-usage-stats --block"
+    shm_size: 2g
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: '4g'
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "ray", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      - localstack
+
+  ray-worker:
+    image: ${RAY_IMAGE}
+    depends_on:
+      - ray-head
+      - localstack
+    env_file:
+      - .env
+    environment:
+      - AWS_ENDPOINT_URL_S3=http://localstack:${LOCALSTACK_PORT}
+    command: bash -c "ray start --address=ray-head:${PORT} --num-cpus=${NUM_CPUS_PER_WORKER} --block"
+    shm_size: 4g
+    deploy:
+      mode: replicated
+      replicas: ${NUM_CPU_WORKERS}
+      resources:
+        limits:
+          cpus: '$NUM_CPUS_PER_WORKER'
+          memory: '2g'
+
+volumes:
+  postgres_data:
+  notebooks:
+  scripts:
+  localstack_data:
