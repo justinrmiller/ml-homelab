@@ -1,38 +1,11 @@
-x-common-env: &common_env
-  AWS_ENDPOINT_URL_S3: http://minio:9000
-  AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minioadmin}
-  AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
-  AWS_DEFAULT_REGION: us-east-1
-  AWS_S3_FORCE_PATH_STYLE: "true"
+#x-common-env: &common_env
+#  AWS_ENDPOINT_URL_S3: http://minio:9000
+#  AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minioadmin}
+#  AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+#  AWS_DEFAULT_REGION: us-east-1
+#  AWS_S3_FORCE_PATH_STYLE: "true"
 
 services:
-
-  streamlit:
-    image: python:3.11.11-slim
-    container_name: streamlit_app
-    command: >
-      bash -c "
-        pip install --no-cache-dir -r /app/requirements.txt &&
-        streamlit run /app/app.py --server.address 0.0.0.0 --server.port 8501"
-    ports:
-      - "${STREAMLIT_PORT:-8501}:8501"
-    volumes:
-      - ./streamlit_app:/app
-    working_dir: /app
-    env_file: .env
-    environment:
-      <<: *common_env
-    depends_on:
-      minio:
-        condition: service_healthy
-    networks: [homelab_network]
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
 
   minio:
     image: minio/minio:latest
@@ -49,7 +22,6 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
       MINIO_DEFAULT_BUCKETS: ${MINIO_DEFAULT_BUCKETS:-app-bucket,ray-bucket}
       MINIO_BROWSER_REDIRECT_URL: http://localhost:${MINIO_CONSOLE_PORT:-9001}
-    networks: [homelab_network]
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
@@ -75,67 +47,4 @@ services:
         mc mb minio/ray-bucket --ignore-existing &&
         mc anonymous set public minio/app-bucket &&
         echo 'Buckets ready ✨'"
-    networks: [homelab_network]
     restart: "no"
-
-  ray-head:
-    image: ${RAY_IMAGE}
-    container_name: ray_head_node
-    command: bash -c "ray start --head --port=6379 --ray-client-server-port=10001 --dashboard-port=8265 --dashboard-host=0.0.0.0 --include-dashboard True --disable-usage-stats --block"
-    ports:
-      - "${GCS_PORT:-6379}:6379"          # internal control plane
-      - "${CLIENT_PORT:-10001}:10001"     # Ray Client
-      - "${DASHBOARD_PORT:-8265}:8265"    # dashboard
-    volumes:
-      - ./data/ray-head:/tmp/ray
-      - ./data/ray_scripts:/scripts
-    shm_size: 2g
-    env_file: .env
-    environment:
-      <<: *common_env
-      RAY_DISABLE_IMPORT_WARNING: "1"
-      RAY_DEDUP_LOGS: "0"
-    deploy:
-      resources:
-        limits:
-          cpus: "2"
-          memory: "4g"
-    networks: [homelab_network]
-    restart: unless-stopped
-    depends_on:
-      minio:
-        condition: service_healthy
-
-  ray-worker-1:
-    image: ${RAY_IMAGE}
-    container_name: ray_worker_node_1
-    depends_on:
-      - ray-head
-      - minio
-    command: bash -c "ray start --address=ray-head:6379 --num-cpus=${NUM_CPUS_PER_WORKER:-2} --block"
-    volumes:
-      - ./data/ray-worker-1:/tmp/ray
-      - ./data/scripts:/scripts
-    shm_size: 2g
-    env_file: .env
-    environment:
-      <<: *common_env
-      RAY_DISABLE_IMPORT_WARNING: "1"
-      RAY_DEDUP_LOGS: "0"
-    deploy:
-      resources:
-        limits:
-          cpus: "${NUM_CPUS_PER_WORKER:-2}"
-          memory: "2g"
-    networks: [homelab_network]
-    restart: unless-stopped
-
-networks:
-  homelab_network:
-    driver: bridge
-    name: homelab_bridge_network
-    ipam:
-      driver: default
-      config:
-        - subnet: 172.20.0.0/16
-          gateway: 172.20.0.1
