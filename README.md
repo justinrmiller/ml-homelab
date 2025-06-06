@@ -41,8 +41,8 @@ A local development environment for orchestrating, training, and visualizing mac
 
 ### 2. **Ray**
 - **Purpose:** Distributed ML training and hyperparameter tuning.
-- **Example:** [`examples/mnist_training/train_mnist.py`](examples/mnist_training/train_mnist.py) runs Ray Tune on MNIST with PyTorch.
-- **How to run:** See [`examples/mnist_training/run.sh`](examples/mnist_training/run.sh).
+- **Example:** [`examples/mnist_training/train_mnist.py`](streamlit_app/jobs/mnist_training/train_mnist.py) runs Ray Tune on MNIST with PyTorch.
+- **How to run:** See [`examples/mnist_training/run.sh`](streamlit_app/jobs/mnist_training/run.sh).
 
 ### 3. **Streamlit**
 - **Purpose:** Interactive dashboard for cluster status and S3 browsing.
@@ -100,7 +100,7 @@ A local development environment for orchestrating, training, and visualizing mac
 
 - Run distributed MNIST training with Ray Tune:
   ```sh
-  cd examples/mnist_training
+  cd jobs/mnist_training
   ./run.sh
   ```
 
@@ -123,7 +123,7 @@ A local development environment for orchestrating, training, and visualizing mac
 ## Customization
 
 - **Add new Airflow DAGs:** Place Python files in [`dags/`](dags/).
-- **Add new ML experiments:** Place scripts in [`examples/`](examples/).
+- **Add new ML experiments:** Place scripts in [`examples/`](streamlit_app/jobs/).
 - **Extend Streamlit UI:** Edit [`streamlit_app/app.py`](streamlit_app/app.py).
 - **Install extra Python packages:** Add to [`requirements.txt`](requirements.txt) or [`streamlit_app/requirements.txt`](streamlit_app/requirements.txt).
 - **Install OS packages:** Add to [`packages.txt`](packages.txt).

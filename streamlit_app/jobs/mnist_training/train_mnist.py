@@ -126,7 +126,7 @@ if __name__ == "__main__":
     )
     args, _ = parser.parse_known_args()
 
-    ray.init("127.0.0.1:8265")
+    ray.init("localhost:10001")
 
     # for early stopping
     sched = AsyncHyperBandScheduler()
