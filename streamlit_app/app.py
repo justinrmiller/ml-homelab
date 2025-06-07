@@ -9,6 +9,16 @@ from ray.job_submission import JobSubmissionClient, JobStatus
 
 st.set_page_config(layout="wide")
 
+css = '''
+<style>
+    .stTabs [data-baseweb="tab-list"] button [data-testid="stMarkdownContainer"] p {
+    font-size:1rem;
+    }
+</style>
+'''
+
+st.markdown(css, unsafe_allow_html=True)
+
 def is_ray_running():
     try:
         s = socket.create_connection(("localhost", 8265), timeout=2)
@@ -177,7 +187,7 @@ with tabs[1]:
     ]
 
     for job in training_jobs:
-        with st.expander(f"Training Job - {job['job_name']}", expanded=True):
+        with st.expander(f"Training Job - {job['job_name']}", expanded=False):
             wire_job(job["job_name"], job["entrypoint"])
 
 with tabs[2]:
@@ -189,5 +199,5 @@ with tabs[2]:
     ]
 
     for job in inference_jobs:
-        with st.expander(f"Inference Job - {job['job_name']}", expanded=True):
+        with st.expander(f"Inference Job - {job['job_name']}", expanded=False):
             wire_job(job["job_name"], job["entrypoint"])
