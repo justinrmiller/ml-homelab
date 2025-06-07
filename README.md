@@ -8,24 +8,23 @@ A local development environment for orchestrating, training, and visualizing mac
 
 ```
 .
-├── dags/                # Airflow DAGs (workflows)
-│   └── exampledag.py    # Example astronaut ETL DAG
-├── examples/
-│   └── mnist_training/  # Example Ray Tune MNIST training job
-│       ├── train_mnist.py
-│       └── run.sh
+├── data/                # Data storage for services
+│   ├── minio/           # MinIO S3-compatible storage
+│   │   ├── app-bucket/  # General application bucket
+│   │   └── ray-bucket/  # Ray-specific bucket
 ├── streamlit_app/       # Streamlit dashboard app
-│   ├── app.py
-│   └── requirements.txt
-├── tests/               # Pytest-based DAG and integration tests
-│   └── dags/
-├── .astro/              # Astro project config and DAG integrity tests
-├── docker-compose.yaml  # Multi-service orchestration (Airflow, Ray, Streamlit, LocalStack)
-├── Dockerfile           # Astro Runtime base image for Airflow
-├── requirements.txt     # Python requirements for Airflow
-├── packages.txt         # OS-level packages for Airflow image
-├── airflow_settings.yaml# Local Airflow Connections/Variables/Pools
-├── .env                 # Environment variables for Docker Compose
+│   ├── app.py           # Main Streamlit dashboard
+│   ├── requirements.txt # Python dependencies for Streamlit
+│   └── jobs/            # ML jobs for Ray execution
+│       ├── mnist_training/      # MNIST example job
+│       │   ├── train_mnist.py   # Training script
+│       │   └── run.sh           # Job submission script
+│       └── resnet_inference/    # ResNet example job
+│           └── inference.py     # Inference script
+├── docker-compose.yaml  # MinIO orchestration 
+├── Makefile            # Simple commands for running services
+├── requirements.txt     # Python requirements
+├── .env                 # Environment variables for services
 ├── LICENSE
 └── README.md
 ```
@@ -34,26 +33,24 @@ A local development environment for orchestrating, training, and visualizing mac
 
 ## Components
 
-### 1. **Airflow**
-- **Purpose:** Orchestrate ETL/data workflows.
-- **Location:** [`dags/exampledag.py`](dags/exampledag.py)
-- **Example DAG:** [`exampledag.py`](dags/exampledag.py) fetches and prints astronauts in space using the TaskFlow API and dynamic task mapping.
-
-### 2. **Ray**
+### 1. **Ray**
 - **Purpose:** Distributed ML training and hyperparameter tuning.
-- **Example:** [`examples/mnist_training/train_mnist.py`](streamlit_app/jobs/mnist_training/train_mnist.py) runs Ray Tune on MNIST with PyTorch.
-- **How to run:** See [`examples/mnist_training/run.sh`](streamlit_app/jobs/mnist_training/run.sh).
+- **Example:** [`streamlit_app/jobs/mnist_training/train_mnist.py`](streamlit_app/jobs/mnist_training/train_mnist.py) runs Ray Tune on MNIST with PyTorch.
+- **How to run:** See [`streamlit_app/jobs/mnist_training/run.sh`](streamlit_app/jobs/mnist_training/run.sh).
+- **Status:** Must be started manually (see Getting Started section).
 
-### 3. **Streamlit**
+### 2. **Streamlit**
 - **Purpose:** Interactive dashboard for cluster status and S3 browsing.
 - **Location:** [`streamlit_app/app.py`](streamlit_app/app.py)
 - **Features:** 
   - Check Ray cluster status.
-  - List S3 buckets via LocalStack.
+  - List S3 buckets and manage files.
+  - Submit Ray jobs via UI.
 
-### 4. **LocalStack**
-- **Purpose:** Local AWS S3 emulation for development/testing.
+### 3. **MinIO**
+- **Purpose:** S3-compatible object storage system for local development.
 - **Configured in:** [`docker-compose.yaml`](docker-compose.yaml)
+- **Buckets:** app-bucket (public), ray-bucket
 
 ---
 
@@ -61,9 +58,9 @@ A local development environment for orchestrating, training, and visualizing mac
 
 ### Prerequisites
 
-- [Docker](https://www.docker.com/)
-- [Docker Compose](https://docs.docker.com/compose/)
-- [Astro CLI](https://docs.astronomer.io/astro/cli/install-cli) (for Airflow development)
+- [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/)
+- [Ray](https://docs.ray.io/en/latest/ray-overview/installation.html) for distributed ML
+- [Streamlit](https://streamlit.io/) for the dashboard
 
 ### Setup
 
@@ -74,59 +71,91 @@ A local development environment for orchestrating, training, and visualizing mac
    ```
 
 2. **Configure environment variables:**
-   - Copy `.env.example` to `.env` and adjust ports/services as needed.
-
-3. **Start all services:**
+   - Check and adjust `.env` file for your environment.
+   
+3. **Install dependencies:**
    ```sh
-   docker compose up
+   pip install -r streamlit_app/requirements.txt
    ```
-   This will launch Airflow, Ray (head/worker), Streamlit, and LocalStack.
 
-4. **Access services:**
-   - **Airflow UI:** http://localhost:8080/ (default, if using Astro CLI)
+4. **Start all services at once:**
+
+   Using the convenience commands in the Makefile:
+   ```sh
+   make start    # Start all services (MinIO, Ray, Streamlit)
+   make stop     # Stop all services
+   ```
+   
+   This will:
+   - Start MinIO using Docker Compose
+   - Launch Ray as a head node
+   - Start the Streamlit dashboard
+   
+   Alternatively, you can directly use the scripts:
+   ```sh
+   ./init.sh     # Start all services
+   ./stop.sh     # Stop all services
+   ```
+
+   **Alternatively, start services separately:**
+
+   Start MinIO (S3 storage):
+   ```sh
+   docker compose up -d
+   ```
+   
+   Start Ray (in a separate terminal):
+   ```sh
+   ray start --head \
+     --port=6379 \
+     --dashboard-port=8265
+   ```
+   
+   Start Streamlit dashboard (in a separate terminal):
+   ```sh
+   make run
+   ```
+   
+5. **Access services:**
+   - **MinIO Console:** http://localhost:9001/ (credentials from .env)
    - **Streamlit Dashboard:** http://localhost:8501/
    - **Ray Dashboard:** http://localhost:8265/
-   - **LocalStack S3:** http://localhost:4566/
 
 ---
 
 ## Example Workflows
 
-### Airflow DAG
-
-- See [`dags/exampledag.py`](dags/exampledag.py) for a sample ETL pipeline using the Open Notify API.
-
 ### Ray MNIST Training
 
 - Run distributed MNIST training with Ray Tune:
   ```sh
-  cd jobs/mnist_training
+  cd streamlit_app/jobs/mnist_training
   ./run.sh
   ```
+  
+- Or submit the job through the Streamlit UI using the Training tab.
 
 ### Streamlit Dashboard
 
-- Use the dashboard to check Ray cluster status and list S3 buckets (via LocalStack).
+- Use the dashboard to:
+  - Check Ray cluster status
+  - Browse and manage S3 buckets and files in MinIO
+  - Submit Ray jobs for training and inference
 
 ---
 
 ## Testing
 
-- **DAG Integrity:** Custom and Astro-provided tests in [`tests/dags/`](tests/dags/) and [`.astro/test_dag_integrity_default.py`](.astro/test_dag_integrity_default.py).
-- **Run tests:**
-  ```sh
-  pytest tests/
-  ```
+This project doesn't currently include automated tests. You can manually test your ML workflows through the Streamlit interface or by running the job scripts directly.
 
 ---
 
 ## Customization
 
-- **Add new Airflow DAGs:** Place Python files in [`dags/`](dags/).
-- **Add new ML experiments:** Place scripts in [`examples/`](streamlit_app/jobs/).
+- **Add new ML experiments:** Place scripts in [`streamlit_app/jobs/`](streamlit_app/jobs/).
 - **Extend Streamlit UI:** Edit [`streamlit_app/app.py`](streamlit_app/app.py).
-- **Install extra Python packages:** Add to [`requirements.txt`](requirements.txt) or [`streamlit_app/requirements.txt`](streamlit_app/requirements.txt).
-- **Install OS packages:** Add to [`packages.txt`](packages.txt).
+- **Install extra Python packages:** Add to [`streamlit_app/requirements.txt`](streamlit_app/requirements.txt).
+- **Configure Ray:** Adjust parameters in the Ray start command or in the run scripts.
 
 ---
 
@@ -138,7 +167,6 @@ MIT License. See [LICENSE](LICENSE) for details.
 
 ## Credits
 
-- [Astronomer](https://www.astronomer.io/) for Airflow runtime and project scaffolding.
-- [Ray](https://ray.io/) for distributed ML.
-- [Streamlit](https://streamlit.io/) for dashboarding.
-- [LocalStack](https://localstack.cloud/) for AWS emulation.
+- [Ray](https://ray.io/) for distributed ML computation.
+- [Streamlit](https://streamlit.io/) for interactive dashboarding.
+- [MinIO](https://min.io/) for S3-compatible object storage.

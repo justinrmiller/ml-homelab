@@ -29,7 +29,7 @@ def is_ray_running():
 
 # Conditional init if already running
 if is_ray_running():
-    ray.init(address='auto', ignore_reinit_error=True)
+    ray.init(address='localhost:6379', ignore_reinit_error=True)
 
 def wire_job(job_name: str, entrypoint: str, working_dir: str = "./streamlit_app/jobs"):
     if st.button(key=job_name, label=f"▶ Run {job_name} job"):
