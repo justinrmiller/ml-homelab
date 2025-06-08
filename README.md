@@ -1,6 +1,6 @@
 # ML Homelab
 
-A local development environment for orchestrating, training, and visualizing machine learning workflows using Apache Airflow, Ray, and Streamlit. This project provides a reproducible setup for running ETL pipelines, distributed ML experiments, and interactive dashboards, with local emulation of AWS S3 via LocalStack.
+A local development environment for orchestrating, training, and visualizing machine learning workflows using Apache Airflow, Ray, and Streamlit. This project provides a reproducible setup for running ETL pipelines, distributed ML experiments, and interactive dashboards, with local emulation of AWS S3 via Minio.
 
 ---
 
