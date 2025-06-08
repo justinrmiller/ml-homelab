@@ -32,14 +32,16 @@ if ! command_exists docker; then
   missing_deps=1
 fi
 
-if ! command_exists ray; then
-  echo -e "❌ Ray not found. Please install Ray using: pip install ray[default]==2.46.0"
-  missing_deps=1
+if ! command_exists "uv run ray"; then
+  #echo -e "❌ Ray not found. Please install Ray using: pip install ray[default]==2.46.0"
+  #missing_deps=1
+  echo "skipping ray install"
 fi
 
-if ! command_exists streamlit; then
-  echo -e "❌ Streamlit not found. Please install it using: pip install streamlit"
-  missing_deps=1
+if ! command_exists "uv run streamlit"; then
+#  echo -e "❌ Streamlit not found. Please install it using: pip install streamlit"
+#  missing_deps=1
+  echo "skipping streamlit install"
 fi
 
 if [ $missing_deps -eq 1 ]; then
@@ -72,7 +74,7 @@ echo -e "${YELLOW}Step 2/3: Starting Ray cluster...${NC}"
 if is_port_in_use 8265; then
   echo -e "Ray seems to be already running on port 8265"
 else
-  ray start --head --port=6379 --dashboard-port=8265 &
+  uv run ray start --head --port=6379 --dashboard-port=8265 &
   RAY_PID=$!
   echo -e "⏳ Waiting for Ray to initialize..."
   sleep 5

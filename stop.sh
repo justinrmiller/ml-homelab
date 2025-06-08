@@ -25,9 +25,8 @@ fi
 
 # Step 2: Stop Ray
 echo -e "${YELLOW}Step 2/3: Stopping Ray cluster...${NC}"
-if ray status > /dev/null 2>&1; then
-  echo -e "Shutting down Ray cluster..."
-  ray stop
+if uv run ray status > /dev/null 2>&1; then echo -e "Shutting down Ray cluster..."
+  uv run ray stop
   echo -e "✅ Ray stopped\n"
 else
   echo -e "No Ray cluster found to stop\n"

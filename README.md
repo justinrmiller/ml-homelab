@@ -69,9 +69,9 @@ A local development environment for orchestrating, training, and visualizing mac
 2. **Configure environment variables:**
    - Check and adjust `.env` file for your environment.
 
-3. **Install dependencies:**
+3. **Install UV:**
    ```sh
-   pip install -r streamlit_app/requirements.txt
+   python3 -m pip install --user pipx && python3 -m pipx install uv
    ```
 
 4. **Start all services at once:**

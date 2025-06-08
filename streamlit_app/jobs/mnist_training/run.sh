@@ -2,7 +2,7 @@
 
 # make sure to install ray prior to running this script
 
-ray job submit \
+uv run ray job submit \
   --address ray://127.0.0.1:8265 \
   --working-dir . \
   --runtime-env-json '{
