@@ -8,23 +8,22 @@ A local development environment for orchestrating, training, and visualizing mac
 
 ```
 .
-├── data/                # Data storage for services
-│   ├── minio/           # MinIO S3-compatible storage
-│   │   ├── app-bucket/  # General application bucket
-│   │   └── ray-bucket/  # Ray-specific bucket
-├── streamlit_app/       # Streamlit dashboard app
-│   ├── app.py           # Main Streamlit dashboard
-│   ├── requirements.txt # Python dependencies for Streamlit
-│   └── jobs/            # ML jobs for Ray execution
+├── data/                        # Data storage for services
+│   ├── minio/                   # MinIO S3-compatible storage
+│   │   ├── app-bucket/          # General application bucket
+│   │   └── ray-bucket/          # Ray-specific bucket
+├── streamlit_app/               # Streamlit dashboard app
+│   ├── app.py                   # Main Streamlit dashboard
+│   ├── requirements.txt         # Python dependencies for Streamlit
+│   └── jobs/                    # ML jobs for Ray execution
 │       ├── mnist_training/      # MNIST example job
 │       │   ├── train_mnist.py   # Training script
 │       │   └── run.sh           # Job submission script
 │       └── resnet_inference/    # ResNet example job
 │           └── inference.py     # Inference script
-├── docker-compose.yaml  # MinIO orchestration 
-├── Makefile            # Simple commands for running services
-├── requirements.txt     # Python requirements
-├── .env                 # Environment variables for services
+├── docker-compose.yaml          # MinIO orchestration
+├── Makefile                     # Simple commands for running services
+├── .env                         # Environment variables for services
 ├── LICENSE
 └── README.md
 ```
@@ -35,14 +34,11 @@ A local development environment for orchestrating, training, and visualizing mac
 
 ### 1. **Ray**
 - **Purpose:** Distributed ML training and hyperparameter tuning.
-- **Example:** [`streamlit_app/jobs/mnist_training/train_mnist.py`](streamlit_app/jobs/mnist_training/train_mnist.py) runs Ray Tune on MNIST with PyTorch.
-- **How to run:** See [`streamlit_app/jobs/mnist_training/run.sh`](streamlit_app/jobs/mnist_training/run.sh).
-- **Status:** Must be started manually (see Getting Started section).
 
 ### 2. **Streamlit**
 - **Purpose:** Interactive dashboard for cluster status and S3 browsing.
 - **Location:** [`streamlit_app/app.py`](streamlit_app/app.py)
-- **Features:** 
+- **Features:**
   - Check Ray cluster status.
   - List S3 buckets and manage files.
   - Submit Ray jobs via UI.
@@ -72,7 +68,7 @@ A local development environment for orchestrating, training, and visualizing mac
 
 2. **Configure environment variables:**
    - Check and adjust `.env` file for your environment.
-   
+
 3. **Install dependencies:**
    ```sh
    pip install -r streamlit_app/requirements.txt
@@ -85,12 +81,12 @@ A local development environment for orchestrating, training, and visualizing mac
    make start    # Start all services (MinIO, Ray, Streamlit)
    make stop     # Stop all services
    ```
-   
+
    This will:
    - Start MinIO using Docker Compose
    - Launch Ray as a head node
    - Start the Streamlit dashboard
-   
+
    Alternatively, you can directly use the scripts:
    ```sh
    ./init.sh     # Start all services
@@ -103,19 +99,19 @@ A local development environment for orchestrating, training, and visualizing mac
    ```sh
    docker compose up -d
    ```
-   
+
    Start Ray (in a separate terminal):
    ```sh
    ray start --head \
      --port=6379 \
      --dashboard-port=8265
    ```
-   
+
    Start Streamlit dashboard (in a separate terminal):
    ```sh
    make run
    ```
-   
+
 5. **Access services:**
    - **MinIO Console:** http://localhost:9001/ (credentials from .env)
    - **Streamlit Dashboard:** http://localhost:8501/
@@ -132,7 +128,7 @@ A local development environment for orchestrating, training, and visualizing mac
   cd streamlit_app/jobs/mnist_training
   ./run.sh
   ```
-  
+
 - Or submit the job through the Streamlit UI using the Training tab.
 
 ### Streamlit Dashboard

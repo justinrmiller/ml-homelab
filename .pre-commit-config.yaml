@@ -1,0 +1,140 @@
+# Pre-commit configuration for Streamlit and Ray application
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+
+repos:
+  # Basic file checks and cleanup
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        description: Remove trailing whitespace
+      - id: end-of-file-fixer
+        description: Ensure files end with newline
+      - id: check-yaml
+        description: Check YAML syntax
+      - id: check-toml
+        description: Check TOML syntax
+      - id: check-json
+        description: Check JSON syntax
+      - id: check-added-large-files
+        description: Prevent large files from being committed
+        args: ['--maxkb=1000']
+      - id: check-merge-conflict
+        description: Check for merge conflict markers
+      - id: debug-statements
+        description: Check for debugger imports and breakpoints
+      - id: check-docstring-first
+        description: Check docstring comes first in Python files
+      - id: check-case-conflict
+        description: Check for case conflicts in filenames
+      - id: mixed-line-ending
+        description: Ensure consistent line endings
+
+  # Python import sorting
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        description: Sort Python imports
+        args: [
+          "--profile=black",
+          "--multi-line=3",
+          "--trailing-comma",
+          "--force-grid-wrap=0",
+          "--combine-as",
+          "--line-width=88"
+        ]
+
+  # Python code formatting
+  - repo: https://github.com/psf/black
+    rev: 23.12.1
+    hooks:
+      - id: black
+        description: Format Python code with Black
+        language_version: python3
+        args: ["--line-length=88"]
+
+  # Python linting
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.0.0
+    hooks:
+      - id: flake8
+        description: Lint Python code with flake8
+        additional_dependencies: [
+          flake8-docstrings,     # Check docstring conventions
+          flake8-bugbear,        # Find likely bugs and design problems
+          flake8-comprehensions, # Help write better list/set/dict comprehensions
+          flake8-simplify,       # Plugin to simplify Python code
+          pep8-naming,           # Check PEP8 naming conventions
+        ]
+        args: [
+          "--max-line-length=88",
+          "--extend-ignore=E203,W503,E501",  # Ignore conflicts with Black
+          "--max-complexity=10",
+          "--docstring-convention=google",   # Use Google docstring style
+        ]
+
+
+  # Python upgrade syntax
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.15.0
+    hooks:
+      - id: pyupgrade
+        description: Upgrade Python syntax for newer versions
+        args: ["--py38-plus"]  # Adjust based on your minimum Python version
+
+  # Remove unused imports and variables
+  - repo: https://github.com/PyCQA/autoflake
+    rev: v2.2.1
+    hooks:
+      - id: autoflake
+        description: Remove unused imports and variables
+        args: [
+          "--in-place",
+          "--remove-all-unused-imports",
+          "--remove-unused-variables",
+          "--expand-star-imports",
+          "--ignore-init-module-imports",
+        ]
+
+  # Notebook cleaning (if you use Jupyter notebooks)
+  - repo: https://github.com/nbQA-dev/nbQA
+    rev: 1.7.1
+    hooks:
+      - id: nbqa-black
+        description: Format Jupyter notebooks with Black
+      - id: nbqa-isort
+        description: Sort imports in Jupyter notebooks
+      - id: nbqa-flake8
+        description: Lint Jupyter notebooks with flake8
+
+  # Additional Python checks
+  - repo: https://github.com/pycqa/pydocstyle
+    rev: 6.3.0
+    hooks:
+      - id: pydocstyle
+        description: Check docstring style
+        args: ["--convention=google"]
+
+# Configuration for specific tools
+default_language_version:
+  python: python3.9  # Adjust to your Python version
+
+# Files to exclude from all hooks
+exclude: |
+  (?x)^(
+    migrations/|
+    __pycache__/|
+    \.git/|
+    \.tox/|
+    \.venv/|
+    venv/|
+    \.pytest_cache/|
+    build/|
+    dist/|
+    \.eggs/
+  )$
+
+# Minimum pre-commit version
+minimum_pre_commit_version: "3.0.0"

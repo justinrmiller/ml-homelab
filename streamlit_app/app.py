@@ -1,37 +1,44 @@
-import boto3
-import ray
+"""Streamlit app."""
+
 import shutil
 import socket
-import streamlit as st
 import time
 
-from ray.job_submission import JobSubmissionClient, JobStatus
+import boto3
+import ray
+import streamlit as st
+from ray.job_submission import JobStatus, JobSubmissionClient
 
 st.set_page_config(layout="wide")
 
-css = '''
+css = """
 <style>
     .stTabs [data-baseweb="tab-list"] button [data-testid="stMarkdownContainer"] p {
     font-size:1rem;
     }
 </style>
-'''
+"""
 
 st.markdown(css, unsafe_allow_html=True)
 
+
 def is_ray_running():
+    """Check to see if ray is running."""
     try:
         s = socket.create_connection(("localhost", 8265), timeout=2)
         s.close()
         return True
-    except:
+    except:  # noqa: B001, E722
         return False
+
 
 # Conditional init if already running
 if is_ray_running():
-    ray.init(address='localhost:6379', ignore_reinit_error=True)
+    ray.init(address="localhost:6379", ignore_reinit_error=True)
+
 
 def wire_job(job_name: str, entrypoint: str, working_dir: str = "./streamlit_app/jobs"):
+    """Configure a job."""
     if st.button(key=job_name, label=f"▶ Run {job_name} job"):
         client = JobSubmissionClient(address="http://localhost:8265")
         with st.spinner("Uploading code & submitting job…"):
@@ -60,23 +67,30 @@ def wire_job(job_name: str, entrypoint: str, working_dir: str = "./streamlit_app
         else:
             st.error(f"{job_name} ended with status **{status}** — check logs above")
 
+
 def check_minio_status():
+    """Minio status display."""
     try:
         s = socket.create_connection(("localhost", 9000), timeout=2)
         s.close()
         return "✅ Running"
-    except:
+    except:  # noqa: B001, E722
         return "❌ Not running"
 
+
 def check_ray_status():
+    """Ray status display."""
     return "✅ Running" if is_ray_running() else "❌ Not running"
 
+
 def get_disk_usage():
+    """Retrieve disk usage."""
     try:
-        total, used, free = shutil.disk_usage('/')
+        total, used, free = shutil.disk_usage("/")
         return f"{free // (1024**3)} GB free out of {total // (1024**3)} GB"
     except Exception as e:
         return f"Error: {e}"
+
 
 st.title("ML Homelab Dashboard")
 
@@ -116,14 +130,16 @@ with tabs[0]:
         st.error(f"Failed to connect to S3/MinIO: {e}")
         bucket_names = []
 
-    if bucket_names:
+    if bucket_names:  # noqa: C901
         selected_bucket = st.selectbox("Select a bucket to view contents", bucket_names)
 
         # List objects in the selected bucket
         try:
             objects = s3.list_objects_v2(Bucket=selected_bucket)
             object_list = objects.get("Contents", [])
-            st.markdown(f"### 📂 Contents of `{selected_bucket}` ({len(object_list)} objects)")
+            st.markdown(
+                f"### 📂 Contents of `{selected_bucket}` ({len(object_list)} objects)"
+            )
 
             for obj in object_list:
                 obj_key = obj["Key"]
@@ -136,11 +152,13 @@ with tabs[0]:
                 with col3:
                     if st.button("⬇️", key=f"download-{obj_key}"):
                         url = s3.generate_presigned_url(
-                            'get_object',
-                            Params={'Bucket': selected_bucket, 'Key': obj_key},
-                            ExpiresIn=3600
+                            "get_object",
+                            Params={"Bucket": selected_bucket, "Key": obj_key},
+                            ExpiresIn=3600,
                         )
-                        st.markdown(f"[Click to Download]({url})", unsafe_allow_html=True)
+                        st.markdown(
+                            f"[Click to Download]({url})", unsafe_allow_html=True
+                        )
                 with col4:
                     if st.button("🗑️", key=f"delete-{obj_key}"):
                         s3.delete_object(Bucket=selected_bucket, Key=obj_key)
@@ -152,7 +170,9 @@ with tabs[0]:
                     body = s3.get_object(Bucket=selected_bucket, Key=obj_key)["Body"]
                     st.code(body.read().decode("utf-8")[:500], language="text")
                 elif obj_key.endswith((".png", ".jpg", ".jpeg")):
-                    img = s3.get_object(Bucket=selected_bucket, Key=obj_key)["Body"].read()
+                    img = s3.get_object(Bucket=selected_bucket, Key=obj_key)[
+                        "Body"
+                    ].read()
                     st.image(img, caption=obj_key, use_column_width=True)
 
         except Exception as e:
@@ -180,10 +200,7 @@ with tabs[0]:
 
 with tabs[1]:
     training_jobs = [
-        {
-            "job_name": "MNIST Tune",
-            "entrypoint": "python mnist_training/train_mnist.py"
-        }
+        {"job_name": "MNIST Tune", "entrypoint": "python mnist_training/train_mnist.py"}
     ]
 
     for job in training_jobs:
@@ -194,7 +211,7 @@ with tabs[2]:
     inference_jobs = [
         {
             "job_name": "Resnet Inference",
-            "entrypoint": "python resnet_inference/inference.py"
+            "entrypoint": "python resnet_inference/inference.py",
         },
     ]
 

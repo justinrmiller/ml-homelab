@@ -1,17 +1,18 @@
+"""Inference."""
+
 import argparse
 import io
 import os
 from typing import Any, Dict, Optional
 
 import numpy as np
+import ray
+import ray.data
 import torch
 import torch.nn as nn
 import torchvision
 from PIL import Image
 from torchvision import transforms
-
-import ray
-import ray.data
 
 # Configuration constants
 IMAGE_SIZE = 224
@@ -23,8 +24,7 @@ class ResNetModel:
     """ResNet model for batch inference using Ray Data."""
 
     def __init__(self, model_name: str = "resnet50"):
-        """
-        Initialize ResNet model.
+        """Initialize ResNet model.
 
         Args:
             model_name: Name of the ResNet model to use
@@ -37,13 +37,21 @@ class ResNetModel:
     def _load_model(self) -> nn.Module:
         """Load and configure the pre-trained ResNet model."""
         if self.model_name == "resnet18":
-            model = torchvision.models.resnet18(weights=torchvision.models.ResNet18_Weights.IMAGENET1K_V1)
+            model = torchvision.models.resnet18(
+                weights=torchvision.models.ResNet18_Weights.IMAGENET1K_V1
+            )
         elif self.model_name == "resnet34":
-            model = torchvision.models.resnet34(weights=torchvision.models.ResNet34_Weights.IMAGENET1K_V1)
+            model = torchvision.models.resnet34(
+                weights=torchvision.models.ResNet34_Weights.IMAGENET1K_V1
+            )
         elif self.model_name == "resnet50":
-            model = torchvision.models.resnet50(weights=torchvision.models.ResNet50_Weights.IMAGENET1K_V1)
+            model = torchvision.models.resnet50(
+                weights=torchvision.models.ResNet50_Weights.IMAGENET1K_V1
+            )
         elif self.model_name == "resnet101":
-            model = torchvision.models.resnet101(weights=torchvision.models.ResNet101_Weights.IMAGENET1K_V1)
+            model = torchvision.models.resnet101(
+                weights=torchvision.models.ResNet101_Weights.IMAGENET1K_V1
+            )
         else:
             raise ValueError(f"Unsupported model: {self.model_name}")
 
@@ -53,16 +61,17 @@ class ResNetModel:
 
     def _get_transform(self) -> transforms.Compose:
         """Get image preprocessing transforms."""
-        return transforms.Compose([
-            transforms.Resize(256),
-            transforms.CenterCrop(IMAGE_SIZE),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD)
-        ])
+        return transforms.Compose(
+            [
+                transforms.Resize(256),
+                transforms.CenterCrop(IMAGE_SIZE),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
+            ]
+        )
 
     def __call__(self, batch: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
-        """
-        Perform inference on a batch of images.
+        """Perform inference on a batch of images.
 
         Args:
             batch: Dictionary containing image data from Ray Data
@@ -116,18 +125,17 @@ class ResNetModel:
             "confidence_score": confidence_scores.cpu().numpy(),
             "top_5_classes": top5_indices.cpu().numpy(),
             "top_5_scores": top5_probs.cpu().numpy(),
-            "file_path": batch.get("path", [None] * batch_size)
+            "file_path": batch.get("path", [None] * batch_size),
         }
 
 
 def load_images_from_s3(
-        s3_uri: str,
-        aws_access_key_id: Optional[str] = None,
-        aws_secret_access_key: Optional[str] = None,
-        aws_session_token: Optional[str] = None
+    s3_uri: str,
+    aws_access_key_id: Optional[str] = None,
+    aws_secret_access_key: Optional[str] = None,
+    aws_session_token: Optional[str] = None,
 ) -> ray.data.Dataset:
-    """
-    Load images from S3 using Ray Data.
+    """Load images from S3 using Ray Data.
 
     Args:
         s3_uri: S3 URI (e.g., 's3://bucket/path/to/images/')
@@ -153,15 +161,14 @@ def load_images_from_s3(
     ds = ray.data.read_binary_files(
         s3_uri,
         filesystem=filesystem_kwargs if filesystem_kwargs else None,
-        include_paths=True
+        include_paths=True,
     )
 
     return ds
 
 
 def filter_image_files(batch: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Filter to keep only image files based on file extension.
+    """Filter to keep only image files based on file extension.
 
     Args:
         batch: Batch from Ray Data
@@ -189,16 +196,15 @@ def filter_image_files(batch: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def run_resnet_batch_prediction(
-        s3_uri: str,
-        model_name: str = "resnet50",
-        batch_size: int = 32,
-        num_gpus: float = 1.0,
-        aws_access_key_id: Optional[str] = None,
-        aws_secret_access_key: Optional[str] = None,
-        aws_session_token: Optional[str] = None
+    s3_uri: str,
+    model_name: str = "resnet50",
+    batch_size: int = 32,
+    num_gpus: float = 1.0,
+    aws_access_key_id: Optional[str] = None,
+    aws_secret_access_key: Optional[str] = None,
+    aws_session_token: Optional[str] = None,
 ) -> ray.data.Dataset:
-    """
-    Run ResNet batch prediction on images from S3.
+    """Run ResNet batch prediction on images from S3.
 
     Args:
         s3_uri: S3 URI containing images
@@ -219,7 +225,7 @@ def run_resnet_batch_prediction(
         s3_uri=s3_uri,
         aws_access_key_id=aws_access_key_id,
         aws_secret_access_key=aws_secret_access_key,
-        aws_session_token=aws_session_token
+        aws_session_token=aws_session_token,
     )
 
     print(f"Loaded {ds.count()} files from S3")
@@ -237,18 +243,14 @@ def run_resnet_batch_prediction(
         batch_size=batch_size,
         concurrency=1,
         num_gpus=num_gpus,
-        batch_format="numpy"
+        batch_format="numpy",
     )
 
     return predictions
 
 
-def save_predictions_locally(
-        predictions: ray.data.Dataset,
-        output_path: str
-) -> None:
-    """
-    Save predictions to local filesystem using Ray Data.
+def save_predictions_locally(predictions: ray.data.Dataset, output_path: str) -> None:
+    """Save predictions to local filesystem using Ray Data.
 
     Args:
         predictions: Ray Dataset containing predictions
@@ -257,18 +259,18 @@ def save_predictions_locally(
     print(f"Saving predictions locally to: {output_path}")
 
     # Determine output format based on file extension
-    if output_path.endswith('.parquet') or output_path.endswith('/'):
+    if output_path.endswith(".parquet") or output_path.endswith("/"):
         # Save as Parquet (directory of files)
-        parquet_path = output_path if output_path.endswith('/') else output_path
+        parquet_path = output_path if output_path.endswith("/") else output_path
         predictions.write_parquet(parquet_path)
         print(f"Predictions saved as Parquet to {parquet_path}")
 
-    elif output_path.endswith('.json'):
+    elif output_path.endswith(".json"):
         # Save as JSON Lines
         predictions.write_json(output_path)
         print(f"Predictions saved as JSON to {output_path}")
 
-    elif output_path.endswith('.csv'):
+    elif output_path.endswith(".csv"):
         # Save as CSV
         predictions.write_csv(output_path)
         print(f"Predictions saved as CSV to {output_path}")
@@ -279,9 +281,10 @@ def save_predictions_locally(
         print(f"Predictions saved as Parquet directory to {output_path}")
 
 
-def show_sample_predictions(predictions: ray.data.Dataset, num_samples: int = 5) -> None:
-    """
-    Display sample predictions from the dataset.
+def show_sample_predictions(
+    predictions: ray.data.Dataset, num_samples: int = 5
+) -> None:
+    """Display sample predictions from the dataset.
 
     Args:
         predictions: Ray Dataset containing predictions
@@ -306,7 +309,7 @@ def main() -> None:
     """Main function to run ResNet batch prediction on S3 data."""
     parser = argparse.ArgumentParser(
         description="Ray Data ResNet Batch Prediction from S3",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
     # S3 source arguments
@@ -314,22 +317,22 @@ def main() -> None:
         "--s3-uri",
         type=str,
         default="s3://anonymous@air-example-data-2/imagenette2/train/",
-        help="S3 URI containing images (e.g., s3://bucket/path/to/images/)"
+        help="S3 URI containing images (e.g., s3://bucket/path/to/images/)",
     )
     parser.add_argument(
         "--aws-access-key-id",
         type=str,
-        help="AWS access key ID (if not using IAM role/profile)"
+        help="AWS access key ID (if not using IAM role/profile)",
     )
     parser.add_argument(
         "--aws-secret-access-key",
         type=str,
-        help="AWS secret access key (if not using IAM role/profile)"
+        help="AWS secret access key (if not using IAM role/profile)",
     )
     parser.add_argument(
         "--aws-session-token",
         type=str,
-        help="AWS session token (for temporary credentials)"
+        help="AWS session token (for temporary credentials)",
     )
 
     # Model arguments
@@ -338,21 +341,18 @@ def main() -> None:
         type=str,
         default="resnet50",
         choices=["resnet18", "resnet34", "resnet50", "resnet101"],
-        help="ResNet model variant to use"
+        help="ResNet model variant to use",
     )
 
     # Processing arguments
     parser.add_argument(
-        "--batch-size",
-        type=int,
-        default=64,
-        help="Batch size for inference"
+        "--batch-size", type=int, default=64, help="Batch size for inference"
     )
     parser.add_argument(
         "--num-gpus",
         type=float,
         default=0.0,
-        help="Number of GPUs to use for inference"
+        help="Number of GPUs to use for inference",
     )
 
     # Output arguments
@@ -360,20 +360,20 @@ def main() -> None:
         "--output-path",
         type=str,
         default="./predictions",
-        help="Local path to save prediction results (.csv, .json, .parquet, or directory)"
+        help="Local path to save prediction results (.csv, .json, .parquet, or directory)",
     )
     parser.add_argument(
         "--sample-size",
         type=int,
         default=5,
-        help="Number of sample predictions to display"
+        help="Number of sample predictions to display",
     )
 
     # Testing arguments
     parser.add_argument(
         "--smoke-test",
         action="store_true",
-        help="Run a quick test with smaller batch size"
+        help="Run a quick test with smaller batch size",
     )
 
     args = parser.parse_args()
@@ -394,20 +394,17 @@ def main() -> None:
             num_gpus=args.num_gpus,
             aws_access_key_id=args.aws_access_key_id,
             aws_secret_access_key=args.aws_secret_access_key,
-            aws_session_token=args.aws_session_token
+            aws_session_token=args.aws_session_token,
         )
 
-        print(f"\nBatch prediction completed!")
+        print("\nBatch prediction completed!")
         print(f"Total predictions: {predictions.count()}")
 
         # Show sample predictions
         show_sample_predictions(predictions, args.sample_size)
 
         # Save results locally
-        save_predictions_locally(
-            predictions=predictions,
-            output_path=args.output_path
-        )
+        save_predictions_locally(predictions=predictions, output_path=args.output_path)
 
         print("\nBatch prediction pipeline completed successfully!")
 
