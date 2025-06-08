@@ -72,6 +72,7 @@ A local development environment for orchestrating, training, and visualizing mac
 3. **Install UV:**
    ```sh
    python3 -m pip install --user pipx && python3 -m pipx install uv
+   uv sync
    ```
 
 4. **Start all services at once:**
