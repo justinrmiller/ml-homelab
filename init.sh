@@ -32,16 +32,19 @@ if ! command_exists docker; then
   missing_deps=1
 fi
 
-if ! command_exists "uv run ray"; then
-  #echo -e "❌ Ray not found. Please install Ray using: pip install ray[default]==2.46.0"
-  #missing_deps=1
-  echo "skipping ray install"
+if ! command_exists "uv"; then
+  echo -e "❌ UV not found. Please see README for instructions to install it"
+  missing_deps=1
 fi
 
-if ! command_exists "uv run streamlit"; then
-#  echo -e "❌ Streamlit not found. Please install it using: pip install streamlit"
-#  missing_deps=1
-  echo "skipping streamlit install"
+if uv run ray --help | grep -i usage; then
+  echo -e "❌ Ray not found. Please install Ray using: pip install ray[default]==2.46.0"
+  missing_deps=1
+fi
+
+if uv run streamlit --help | grep -i usage; then
+  echo -e "❌ Streamlit not found. Please install it using: pip install streamlit"
+  missing_deps=1
 fi
 
 if [ $missing_deps -eq 1 ]; then
