@@ -74,16 +74,15 @@ A local development environment for orchestrating, training, and visualizing mac
 
    ```sh
    python3 -m pip install --user pipx && python3 -m pipx install uv
-   uv sync
    ```
 
-3a. **Install Python Packages**
+4. **Install Python Packages**
 
    ```sh
    uv sync
    ```
 
-4. **Start all services at once:**
+5. **Start all services at once:**
 
    Using the convenience commands in the Makefile:
    ```sh
@@ -121,7 +120,7 @@ A local development environment for orchestrating, training, and visualizing mac
    make run
    ```
 
-5. **Access services:**
+6. **Access services:**
    - **MinIO Console:** http://localhost:9001/ (credentials from .env)
    - **Streamlit Dashboard:** http://localhost:8501/
    - **Ray Dashboard:** http://localhost:8265/
