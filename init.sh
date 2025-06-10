@@ -74,7 +74,7 @@ echo -e "${YELLOW}Step 2/3: Starting Ray cluster...${NC}"
 if is_port_in_use 8265; then
   echo -e "Ray seems to be already running on port 8265"
 else
-  uv run ray start --head --port=6379 --dashboard-port=8265 &
+  uv run ray start --head --port=6379 --dashboard-port=8265 --node-ip-address=0.0.0.0 --dashboard-host=0.0.0.0  &
   RAY_PID=$!
   echo -e "⏳ Waiting for Ray to initialize..."
   sleep 5

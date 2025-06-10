@@ -70,8 +70,16 @@ A local development environment for orchestrating, training, and visualizing mac
    - Check and adjust `.env` file for your environment.
 
 3. **Install UV:**
+   If you already have UV, skip this step
+
    ```sh
    python3 -m pip install --user pipx && python3 -m pipx install uv
+   uv sync
+   ```
+
+3a. **Install Python Packages**
+
+   ```sh
    uv sync
    ```
 
@@ -126,8 +134,7 @@ A local development environment for orchestrating, training, and visualizing mac
 
 - Run distributed MNIST training with Ray Tune:
   ```sh
-  cd streamlit_app/jobs/mnist_training
-  ./run.sh
+  uv run streamlit_app/jobs/mnist_training/train_mnist.py
   ```
 
 - Or submit the job through the Streamlit UI using the Training tab.
