@@ -1,9 +1,0 @@
-ray[default]==2.46.0
-
-boto3
-
-streamlit
-
-torch
-torchvision
-transformers

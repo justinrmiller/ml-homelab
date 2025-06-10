@@ -69,12 +69,20 @@ A local development environment for orchestrating, training, and visualizing mac
 2. **Configure environment variables:**
    - Check and adjust `.env` file for your environment.
 
-3. **Install dependencies:**
+3. **Install UV:**
+   If you already have UV, skip this step
+
    ```sh
-   pip install -r streamlit_app/requirements.txt
+   python3 -m pip install --user pipx && python3 -m pipx install uv
    ```
 
-4. **Start all services at once:**
+4. **Install Python Packages**
+
+   ```sh
+   uv sync
+   ```
+
+5. **Start all services at once:**
 
    Using the convenience commands in the Makefile:
    ```sh
@@ -112,7 +120,7 @@ A local development environment for orchestrating, training, and visualizing mac
    make run
    ```
 
-5. **Access services:**
+6. **Access services:**
    - **MinIO Console:** http://localhost:9001/ (credentials from .env)
    - **Streamlit Dashboard:** http://localhost:8501/
    - **Ray Dashboard:** http://localhost:8265/
@@ -125,8 +133,7 @@ A local development environment for orchestrating, training, and visualizing mac
 
 - Run distributed MNIST training with Ray Tune:
   ```sh
-  cd streamlit_app/jobs/mnist_training
-  ./run.sh
+  uv run streamlit_app/jobs/mnist_training/train_mnist.py
   ```
 
 - Or submit the job through the Streamlit UI using the Training tab.
