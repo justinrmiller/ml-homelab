@@ -40,7 +40,7 @@ if is_ray_running():
 def wire_job(job_name: str, entrypoint: str, working_dir: str = "./streamlit_app/jobs"):
     """Configure a job."""
     if st.button(key=job_name, label=f"▶ Run {job_name} job"):
-        client = JobSubmissionClient(address="http://localhost:8265")
+        client = JobSubmissionClient(address="http://127.0.0.1:8265")
         with st.spinner("Uploading code & submitting job…"):
             job_id = client.submit_job(
                 entrypoint=entrypoint,

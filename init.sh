@@ -72,7 +72,12 @@ echo -e "${YELLOW}Step 2/3: Starting Ray cluster...${NC}"
 if is_port_in_use 8265; then
   echo -e "Ray seems to be already running on port 8265"
 else
-  ray start --head --port=6379 --dashboard-port=8265 &
+  ray start --head \
+    --port=6379 \
+    --dashboard-port=8265 \
+    --ray-client-server-port=10001 \
+    --node-ip-address=127.0.0.1 \
+    --dashboard-host=127.0.0.1 &
   RAY_PID=$!
   echo -e "⏳ Waiting for Ray to initialize..."
   sleep 5

@@ -25,13 +25,7 @@ fi
 
 # Step 2: Stop Ray
 echo -e "${YELLOW}Step 2/3: Stopping Ray cluster...${NC}"
-if ray status > /dev/null 2>&1; then
-  echo -e "Shutting down Ray cluster..."
-  ray stop
-  echo -e "✅ Ray stopped\n"
-else
-  echo -e "No Ray cluster found to stop\n"
-fi
+ray stop
 
 # Step 3: Stop MinIO
 echo -e "${YELLOW}Step 3/3: Stopping MinIO with Docker Compose...${NC}"
