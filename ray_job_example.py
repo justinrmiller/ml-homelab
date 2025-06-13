@@ -1,14 +1,13 @@
-# ray_job_single_file.py
+"""Ray Job Submission Example."""
 
-import ray
-from ray.job_submission import JobSubmissionClient, JobStatus
 import time
-import os
+
+from ray.job_submission import JobStatus, JobSubmissionClient
 
 # 2. Submit job using JobSubmissionClient
 client = JobSubmissionClient("ray://127.0.0.1:10001")
 job_id = client.submit_job(
-    entrypoint=f"python hello_ray_job.py",
+    entrypoint="python hello_ray_job.py",
     runtime_env={"working_dir": "./"},
 )
 print(f"✅ Job submitted: {job_id}")

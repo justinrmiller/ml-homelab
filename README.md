@@ -12,7 +12,6 @@ A local development environment for orchestrating, training, and visualizing mac
 │   ├── minio/                   # MinIO S3-compatible storage
 │   │   ├── app-bucket/          # General application bucket
 │   │   └── ray-bucket/          # Ray-specific bucket
-│   └── localstack/              # LocalStack data directory
 ├── streamlit_app/               # Streamlit dashboard app
 │   ├── app.py                   # Main Streamlit dashboard
 │   ├── requirements.txt         # Python dependencies for Streamlit
@@ -72,6 +71,7 @@ A local development environment for orchestrating, training, and visualizing mac
 - [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/)
 - [Ray](https://docs.ray.io/en/latest/ray-overview/installation.html) for distributed ML
 - [Streamlit](https://streamlit.io/) for the dashboard
+- [Python](https://python.org/) - version 3.10/3.11
 
 ### Setup
 
@@ -87,27 +87,23 @@ A local development environment for orchestrating, training, and visualizing mac
      - Ray configuration settings
      - Architecture-specific Ray image selection
    ```
-   # Key settings in .env:
-   AWS_ACCESS_KEY_ID=test-key
-   AWS_SECRET_ACCESS_KEY=test-secret
-   MINIO_ROOT_USER=test-key
-   MINIO_ROOT_PASSWORD=test-secret
-   
-   # Ray settings
-   DASHBOARD_PORT=8265
-   HEAD_NODE_PORT=10001
-   PORT=6379
-   NUM_CPU_WORKERS=2
-   
-   # Architecture-specific Ray image
-   RAY_IMAGE=rayproject/ray:2.46.0-py311-cpu-aarch64  # ARM/Apple Silicon
-   # RAY_IMAGE=rayproject/ray:2.46.0-py311-cpu  # x86
+    # Key settings in .env:
+    AWS_ACCESS_KEY_ID=test-key
+    AWS_SECRET_ACCESS_KEY=test-secret
+    MINIO_ROOT_USER=test-key
+    MINIO_ROOT_PASSWORD=test-secret
+
+    # Ray settings
+    DASHBOARD_PORT=8265
+    HEAD_NODE_PORT=10001
+    PORT=6379
+    RAY_ADDRESS=ray://127.0.0.1:10001
    ```
 
 3. **Install dependencies:**
    ```sh
    pip install -r streamlit_app/requirements.txt
-   pip install ray[default]==2.46.0
+   pip install ray[default]==2.47.0
    ```
 
 4. **Start all services at once:**
@@ -278,21 +274,21 @@ print([b["Name"] for b in buckets["Buckets"]])
 
 ## Customization
 
-- **Add new ML experiments:** 
+- **Add new ML experiments:**
   - Place scripts in [`streamlit_app/jobs/`](streamlit_app/jobs/)
   - Follow the pattern in existing jobs (e.g., mnist_training, resnet_inference)
   - Update the Streamlit app to include new job types
 
-- **Extend Streamlit UI:** 
+- **Extend Streamlit UI:**
   - Edit [`streamlit_app/app.py`](streamlit_app/app.py)
   - Add new tabs, features, or integrations
   - Current structure uses tabs for S3 browsing, Training jobs, and Inference jobs
 
-- **Install extra Python packages:** 
+- **Install extra Python packages:**
   - Add to [`streamlit_app/requirements.txt`](streamlit_app/requirements.txt)
   - Install using `pip install -r streamlit_app/requirements.txt`
 
-- **Configure Ray:** 
+- **Configure Ray:**
   - Adjust parameters in the `.env` file
   - Modify the Ray start command in `init.sh`
   - Add custom Ray configuration in job scripts
