@@ -1,19 +1,18 @@
+"""Train MNIST model."""
+
 import argparse
 import os
 import tempfile
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+import torch.nn.functional as F  # noqa: N812
 import torch.optim as optim
 from filelock import FileLock
-from torchvision import datasets, transforms
-
-import ray
 from ray import tune
-from ray.runtime_env import RuntimeEnv
 from ray.tune import Checkpoint
 from ray.tune.schedulers import AsyncHyperBandScheduler
+from torchvision import datasets, transforms
 
 # Change these values if you want the training to run quicker or slower.
 EPOCH_SIZE = 512
@@ -21,12 +20,16 @@ TEST_SIZE = 256
 
 
 class ConvNet(nn.Module):
+    """Convolutional neural network model."""
+
     def __init__(self):
-        super(ConvNet, self).__init__()
+        """Initialize CNN model."""
+        super().__init__()
         self.conv1 = nn.Conv2d(1, 3, kernel_size=3)
         self.fc = nn.Linear(192, 10)
 
     def forward(self, x):
+        """Forward pass."""
         x = F.relu(F.max_pool2d(self.conv1(x), 3))
         x = x.view(-1, 192)
         x = self.fc(x)
@@ -34,6 +37,7 @@ class ConvNet(nn.Module):
 
 
 def train_func(model, optimizer, train_loader, device=None):
+    """Training function."""
     device = device or torch.device("cpu")
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
@@ -48,6 +52,7 @@ def train_func(model, optimizer, train_loader, device=None):
 
 
 def test_func(model, data_loader, device=None):
+    """Test function."""
     device = device or torch.device("cpu")
     model.eval()
     correct = 0
@@ -66,6 +71,7 @@ def test_func(model, data_loader, device=None):
 
 
 def get_data_loaders(batch_size=64):
+    """Assemble data loaders."""
     mnist_transforms = transforms.Compose(
         [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
     )
@@ -92,6 +98,7 @@ def get_data_loaders(batch_size=64):
 
 
 def train_mnist(config):
+    """Train mnist."""
     should_checkpoint = config.get("should_checkpoint", False)
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
