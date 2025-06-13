@@ -2,7 +2,7 @@ ray[default]==2.46.0
 
 boto3
 
-streamlit
+streamlit==1.45.1
 
 torch
 torchvision
