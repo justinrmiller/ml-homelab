@@ -12,6 +12,15 @@ A local development environment for orchestrating, training, and visualizing mac
 │   ├── minio/                   # MinIO S3-compatible storage
 │   │   ├── app-bucket/          # General application bucket
 │   │   └── ray-bucket/          # Ray-specific bucket
+├── docs/                        # Documentation
+│   ├── docker-setup.md          # Docker and Docker Compose guide
+│   └── kuberay-setup.md         # KubeRay setup and usage guide
+├── scripts/                     # Shell scripts for cluster management
+│   ├── init.sh                  # Script to start all services
+│   ├── stop.sh                  # Script to stop all services
+│   ├── kuberay-init.sh          # KubeRay cluster initialization
+│   ├── kuberay-stop.sh          # KubeRay cluster shutdown
+│   └── kuberay-status.sh        # KubeRay cluster status check
 ├── streamlit_app/               # Streamlit dashboard app
 │   ├── app.py                   # Main Streamlit dashboard
 │   ├── requirements.txt         # Python dependencies for Streamlit
@@ -24,10 +33,8 @@ A local development environment for orchestrating, training, and visualizing mac
 ├── hello_ray_job.py             # Simple Ray job example
 ├── ray_job_example.py           # Ray job submission example
 ├── docker-compose.yaml          # MinIO orchestration
-├── init.sh                      # Script to start all services
-├── stop.sh                      # Script to stop all services
 ├── Makefile                     # Simple commands for running services
-├── .env                         # Environment variables for services
+├── .env.example                 # Environment variables template
 ├── LICENSE
 └── README.md
 ```
@@ -72,6 +79,13 @@ A local development environment for orchestrating, training, and visualizing mac
 - [Ray](https://docs.ray.io/en/latest/ray-overview/installation.html) for distributed ML
 - [Streamlit](https://streamlit.io/) for the dashboard
 - [Python](https://python.org/) - version 3.10/3.11
+
+### KubeRay Prerequisites (Optional)
+
+For KubeRay setup, you'll also need:
+- [Kind](https://kind.sigs.k8s.io/) for local Kubernetes cluster
+- [Helm](https://helm.sh/) for Kubernetes package management
+- [kubectl](https://kubernetes.io/docs/tasks/tools/) for Kubernetes CLI
 
 ### Setup
 
@@ -121,8 +135,8 @@ A local development environment for orchestrating, training, and visualizing mac
 
    Alternatively, you can directly use the scripts:
    ```sh
-   ./init.sh     # Start all services
-   ./stop.sh     # Stop all services
+   scripts/init.sh     # Start all services
+   scripts/stop.sh     # Stop all services
    ```
 
    **Alternatively, start services separately:**
@@ -151,6 +165,56 @@ A local development environment for orchestrating, training, and visualizing mac
    - **MinIO Console:** http://localhost:9001/ (credentials from .env)
    - **Streamlit Dashboard:** http://localhost:8501/
    - **Ray Dashboard:** http://localhost:8265/
+
+### KubeRay Setup (Alternative)
+
+For a more production-like setup using Kubernetes and KubeRay:
+
+1. **Start KubeRay cluster:**
+   ```sh
+   # Using Makefile
+   make kuberay-start
+   
+   # Or using scripts directly
+   scripts/kuberay-init.sh
+   
+   # Or using unified interface
+   scripts/init.sh --kuberay
+   ```
+
+2. **Check cluster status:**
+   ```sh
+   # Using Makefile
+   make kuberay-status
+   
+   # Or using script directly
+   scripts/kuberay-status.sh
+   ```
+
+3. **Stop KubeRay cluster:**
+   ```sh
+   # Using Makefile
+   make kuberay-stop
+   
+   # Or using scripts directly
+   scripts/kuberay-stop.sh
+   
+   # Or using unified interface
+   scripts/stop.sh --kuberay
+   ```
+
+4. **Access services** (same URLs as local setup):
+   - **MinIO Console:** http://localhost:9001/
+   - **Streamlit Dashboard:** http://localhost:8501/
+   - **Ray Dashboard:** http://localhost:8265/
+
+**KubeRay Benefits:**
+- Production-like Kubernetes environment
+- Better resource management and scaling
+- Fault tolerance and high availability
+- Supports multi-tenancy
+
+For detailed KubeRay setup instructions, see [docs/kuberay-setup.md](docs/kuberay-setup.md).
 
 ---
 
@@ -303,39 +367,52 @@ MIT License. See [LICENSE](LICENSE) for details.
 
 ## Helper Scripts
 
-### init.sh
+### scripts/init.sh
 
-The `init.sh` script automates the startup of all services:
+The `scripts/init.sh` script automates the startup of all services:
 - Checks for prerequisites (Docker, Ray, Streamlit)
 - Starts MinIO using Docker Compose
 - Starts Ray as a head node with the client server
 - Starts the Streamlit application
 - Provides status checks and URLs for each service
+- Supports `--kuberay` flag for KubeRay mode
 
 Usage:
 ```sh
-./init.sh
+scripts/init.sh           # Local Ray setup
+scripts/init.sh --kuberay # KubeRay setup
 ```
 
-### stop.sh
+### scripts/stop.sh
 
-The `stop.sh` script gracefully shuts down all services:
+The `scripts/stop.sh` script gracefully shuts down all services:
 - Stops the Streamlit application
 - Stops the Ray cluster
 - Stops MinIO Docker containers
+- Supports `--kuberay` flag for KubeRay cleanup
 
 Usage:
 ```sh
-./stop.sh
+scripts/stop.sh           # Stop local Ray setup
+scripts/stop.sh --kuberay # Stop KubeRay setup
 ```
 
 ### Makefile
 
 The Makefile provides convenient shortcuts:
+
+**Local Ray Setup:**
 ```sh
 make run    # Start the Streamlit app only
 make start  # Start all services (calls init.sh)
 make stop   # Stop all services (calls stop.sh)
+```
+
+**KubeRay Setup:**
+```sh
+make kuberay-start   # Start KubeRay cluster
+make kuberay-status  # Check KubeRay cluster status
+make kuberay-stop    # Stop KubeRay cluster
 ```
 
 ---

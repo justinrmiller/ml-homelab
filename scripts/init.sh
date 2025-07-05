@@ -2,6 +2,29 @@
 # ML Homelab Initialization Script
 # This script starts all required services for the ML Homelab project
 
+# Parse command line arguments
+USE_KUBERAY=false
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --kuberay)
+      USE_KUBERAY=true
+      shift
+      ;;
+    -h|--help)
+      echo "Usage: $0 [OPTIONS]"
+      echo "Options:"
+      echo "  --kuberay    Use KubeRay instead of local Ray cluster"
+      echo "  -h, --help   Show this help message"
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1"
+      echo "Use --help for usage information"
+      exit 1
+      ;;
+  esac
+done
+
 # Text formatting
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -19,6 +42,14 @@ is_port_in_use() {
   netstat -an | grep -q "LISTEN" | grep -q "$1"
   return $?
 }
+
+# Check if KubeRay mode is requested
+if [ "$USE_KUBERAY" = true ]; then
+  echo -e "${BLUE}${BOLD}=== ML Homelab Initialization (KubeRay Mode) ===${NC}"
+  echo -e "Delegating to KubeRay initialization script...\n"
+  exec "$(dirname "$0")/kuberay-init.sh"
+  exit $?
+fi
 
 echo -e "${BLUE}${BOLD}=== ML Homelab Initialization ===${NC}"
 echo -e "Starting all required services...\n"
