@@ -113,13 +113,18 @@ echo -e "Adding KubeRay Helm repository..."
 helm repo add kuberay https://ray-project.github.io/kuberay-helm/
 helm repo update
 
-echo -e "Installing KubeRay operator..."
-helm install kuberay-operator kuberay/kuberay-operator --create-namespace --namespace kuberay-system
-if [ $? -eq 0 ]; then
-  echo -e "✅ KubeRay operator installed successfully"
+echo -e "Checking if KubeRay operator is already installed..."
+if helm list -n kuberay-system | grep -q "kuberay-operator"; then
+  echo -e "KubeRay operator already exists"
 else
-  echo -e "❌ Failed to install KubeRay operator"
-  exit 1
+  echo -e "Installing KubeRay operator..."
+  helm install kuberay-operator kuberay/kuberay-operator --create-namespace --namespace kuberay-system
+  if [ $? -eq 0 ]; then
+    echo -e "✅ KubeRay operator installed successfully"
+  else
+    echo -e "❌ Failed to install KubeRay operator"
+    exit 1
+  fi
 fi
 echo
 
@@ -128,32 +133,85 @@ echo -e "${YELLOW}Step 4/7: Installing Ray cluster...${NC}"
 ARCH=$(detect_architecture)
 echo -e "Detected architecture: ${ARCH}"
 
-if [ "$ARCH" = "aarch64" ]; then
-  echo -e "Installing Ray cluster for ARM architecture..."
-  helm install raycluster kuberay/ray-cluster --version 1.3.2 --set 'image.tag=2.47.0-aarch64'
+echo -e "Checking if Ray cluster is already installed..."
+if helm list | grep -q "raycluster"; then
+  echo -e "Ray cluster already exists"
 else
-  echo -e "Installing Ray cluster for x86_64 architecture..."
-  helm install raycluster kuberay/ray-cluster --version 1.3.2
-fi
+  if [ "$ARCH" = "aarch64" ]; then
+    echo -e "Installing Ray cluster for ARM architecture..."
+    helm install raycluster kuberay/ray-cluster --version 1.3.2 \
+      --set 'image.tag=2.47.0-py311-aarch64' \
+      --set 'head.rayStartParams.port=6379' \
+      --set 'head.rayStartParams.dashboard-port=8265' \
+      --set 'head.rayStartParams.ray-client-server-port=10001' \
+      --set 'head.rayStartParams.node-ip-address=0.0.0.0' \
+      --set 'head.rayStartParams.dashboard-host=0.0.0.0' \
+      --set 'worker.rayStartParams.node-ip-address=0.0.0.0'
+  else
+    echo -e "Installing Ray cluster for x86_64 architecture..."
+    helm install raycluster kuberay/ray-cluster --version 1.3.2 \
+      --set 'image.tag=2.47.0-py311' \
+      --set 'head.rayStartParams.port=6379' \
+      --set 'head.rayStartParams.dashboard-port=8265' \
+      --set 'head.rayStartParams.ray-client-server-port=10001' \
+      --set 'head.rayStartParams.node-ip-address=0.0.0.0' \
+      --set 'head.rayStartParams.dashboard-host=0.0.0.0' \
+      --set 'worker.rayStartParams.node-ip-address=0.0.0.0'
+  fi
 
-if [ $? -eq 0 ]; then
-  echo -e "✅ Ray cluster installed successfully"
-else
-  echo -e "❌ Failed to install Ray cluster"
-  exit 1
+  if [ $? -eq 0 ]; then
+    echo -e "✅ Ray cluster installed successfully"
+  else
+    echo -e "❌ Failed to install Ray cluster"
+    exit 1
+  fi
 fi
 echo
 
 # Step 5: Wait for cluster to be ready
 echo -e "${YELLOW}Step 5/7: Waiting for Ray cluster to be ready...${NC}"
-echo -e "⏳ Waiting for Ray cluster pods to start..."
-kubectl wait --for=condition=ready pod --selector=ray.io/cluster=raycluster-kuberay --timeout=300s
+echo -e "⏳ Waiting for Ray cluster pods to be created..."
+
+# Wait for pods to be created (not necessarily ready)
+for i in {1..30}; do
+  pod_count=$(kubectl get pods --selector=ray.io/cluster=raycluster-kuberay --no-headers 2>/dev/null | wc -l)
+  if [ "$pod_count" -gt 0 ]; then
+    echo -e "✅ Ray cluster pods created (found $pod_count pods)"
+    break
+  elif [ $i -eq 30 ]; then
+    echo -e "❌ Ray cluster pods failed to be created within timeout"
+    exit 1
+  else
+    echo -e "⏳ Attempt $i: Waiting for pods to be created..."
+    sleep 5
+  fi
+done
+
+# Wait for Ray head service to be fully ready (most important)
+echo -e "⏳ Waiting for Ray head service to be available..."
+kubectl wait --for=condition=ready pod --selector=ray.io/cluster=raycluster-kuberay,ray.io/node-type=head --timeout=300s
 
 if [ $? -eq 0 ]; then
-  echo -e "✅ Ray cluster is ready"
+  echo -e "✅ Ray head service is ready"
 else
-  echo -e "⚠️ Ray cluster may not be fully ready, but continuing..."
+  echo -e "❌ Ray head service failed to start"
+  exit 1
 fi
+
+# Check worker pods status (non-blocking)
+echo -e "⏳ Checking worker pod status..."
+worker_ready=$(kubectl get pods --selector=ray.io/cluster=raycluster-kuberay,ray.io/node-type=worker --no-headers 2>/dev/null | grep "1/1.*Running" | wc -l)
+worker_total=$(kubectl get pods --selector=ray.io/cluster=raycluster-kuberay,ray.io/node-type=worker --no-headers 2>/dev/null | wc -l)
+
+if [ "$worker_ready" -gt 0 ]; then
+  echo -e "✅ Worker pods ready: $worker_ready/$worker_total"
+else
+  echo -e "⚠️ Worker pods not ready: $worker_ready/$worker_total (Ray cluster will work with head node only)"
+fi
+
+# Additional wait to ensure Ray dashboard is fully initialized
+echo -e "⏳ Waiting for Ray dashboard to initialize..."
+sleep 20
 echo
 
 # Step 6: Start MinIO with Docker Compose
@@ -178,20 +236,51 @@ echo
 # Step 7: Setup port forwarding and start Streamlit
 echo -e "${YELLOW}Step 7/7: Setting up port forwarding and starting services...${NC}"
 
-# Port forward Ray dashboard
-echo -e "Setting up port forwarding for Ray dashboard..."
-kubectl port-forward service/raycluster-kuberay-head-svc 8265:8265 > /dev/null 2>&1 &
+# Clean up any existing port forwarding
+pkill -f "kubectl port-forward.*8265" 2>/dev/null || true
+pkill -f "kubectl port-forward.*6379" 2>/dev/null || true
+pkill -f "kubectl port-forward.*10001" 2>/dev/null || true
+sleep 2
+
+# Port forward Ray dashboard, GCS server, and client server
+echo -e "Setting up port forwarding for Ray dashboard (8265), GCS server (6379), and client server (10001)..."
+kubectl port-forward service/raycluster-kuberay-head-svc 8265:8265 6379:6379 10001:10001 > /dev/null 2>&1 &
 RAY_PORT_FORWARD_PID=$!
 echo -e "⏳ Waiting for port forwarding to establish..."
-sleep 3
+sleep 5
 
-# Check if Ray dashboard is accessible
-curl -s -o /dev/null http://localhost:8265
-if [ $? -eq 0 ]; then
-  echo -e "✅ Ray dashboard is accessible"
-else
-  echo -e "⚠️ Ray dashboard may not be accessible yet, but continuing..."
-fi
+# Verify Ray dashboard accessibility
+echo -e "Verifying Ray dashboard accessibility..."
+for i in {1..10}; do
+  if curl -s -o /dev/null http://localhost:8265; then
+    echo -e "✅ Ray dashboard is accessible on attempt $i"
+    break
+  elif [ $i -eq 10 ]; then
+    echo -e "❌ Ray dashboard not accessible after 10 attempts"
+    echo -e "Troubleshooting steps:"
+    echo -e "1. Check if port forwarding is running: ps aux | grep 'kubectl port-forward'"
+    echo -e "2. Check Ray head pod logs: kubectl logs -l ray.io/node-type=head"
+    echo -e "3. Check service: kubectl get svc raycluster-kuberay-head-svc"
+    exit 1
+  else
+    echo -e "⏳ Attempt $i: Ray dashboard not ready, retrying in 3 seconds..."
+    sleep 3
+  fi
+done
+
+# Verify GCS server accessibility
+echo -e "Verifying Ray GCS server accessibility..."
+for i in {1..5}; do
+  if nc -z localhost 6379 2>/dev/null; then
+    echo -e "✅ Ray GCS server is accessible on attempt $i"
+    break
+  elif [ $i -eq 5 ]; then
+    echo -e "⚠️ Ray GCS server may not be accessible, but continuing..."
+  else
+    echo -e "⏳ Attempt $i: Ray GCS server not ready, retrying in 2 seconds..."
+    sleep 2
+  fi
+done
 
 # Start Streamlit app
 echo -e "Starting Streamlit app..."
@@ -199,7 +288,7 @@ if is_port_in_use 8501; then
   echo -e "Streamlit seems to be already running on port 8501"
 else
   echo -e "Starting Streamlit app with 'make run'..."
-  (cd "$(dirname "$0")" && make run) &
+  (cd "$(dirname "$0")/.." && make run) &
   STREAMLIT_PID=$!
   echo -e "⏳ Waiting for Streamlit to initialize..."
   sleep 5
