@@ -1,4 +1,4 @@
-.PHONY: run start stop
+.PHONY: run start stop kuberay-start kuberay-stop kuberay-status
 
 # Start Streamlit app only
 run:
@@ -6,8 +6,20 @@ run:
 
 # Start all services (MinIO, Ray, and Streamlit)
 start:
-	./init.sh
+	scripts/init.sh
 
 # Stop all services
 stop:
-	./stop.sh
+	scripts/stop.sh
+
+# Start KubeRay cluster with all services
+kuberay-start:
+	scripts/kuberay-init.sh
+
+# Stop KubeRay cluster and all services
+kuberay-stop:
+	scripts/kuberay-stop.sh
+
+# Check KubeRay cluster status
+kuberay-status:
+	scripts/kuberay-status.sh

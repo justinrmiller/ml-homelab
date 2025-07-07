@@ -2,12 +2,43 @@
 # ML Homelab Shutdown Script
 # This script stops all services started by init.sh
 
+# Parse command line arguments
+USE_KUBERAY=false
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --kuberay)
+      USE_KUBERAY=true
+      shift
+      ;;
+    -h|--help)
+      echo "Usage: $0 [OPTIONS]"
+      echo "Options:"
+      echo "  --kuberay    Stop KubeRay cluster instead of local Ray"
+      echo "  -h, --help   Show this help message"
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1"
+      echo "Use --help for usage information"
+      exit 1
+      ;;
+  esac
+done
+
 # Text formatting
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 BOLD='\033[1m'
+
+# Check if KubeRay mode is requested
+if [ "$USE_KUBERAY" = true ]; then
+  echo -e "${RED}${BOLD}=== ML Homelab Shutdown (KubeRay Mode) ===${NC}"
+  echo -e "Delegating to KubeRay shutdown script...\n"
+  exec "$(dirname "$0")/kuberay-stop.sh"
+  exit $?
+fi
 
 echo -e "${RED}${BOLD}=== ML Homelab Shutdown ===${NC}"
 echo -e "Stopping all services...\n"

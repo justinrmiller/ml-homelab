@@ -32,9 +32,24 @@ def is_ray_running():
         return False
 
 
+def is_kuberay_running():
+    """Check if KubeRay client server is running."""
+    try:
+        s = socket.create_connection(("localhost", 10001), timeout=2)
+        s.close()
+        return True
+    except:  # noqa: B001, E722
+        return False
+
+
 # Conditional init if already running
 if is_ray_running():
-    ray.init(address="localhost:6379", ignore_reinit_error=True)
+    if is_kuberay_running():
+        # KubeRay setup - use Ray client
+        ray.init(address="ray://localhost:10001", ignore_reinit_error=True)
+    else:
+        # Local Ray setup - use direct GCS connection
+        ray.init(address="localhost:6379", ignore_reinit_error=True)
 
 
 def wire_job(job_name: str, entrypoint: str, working_dir: str = "./streamlit_app/jobs"):
