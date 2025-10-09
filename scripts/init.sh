@@ -64,7 +64,7 @@ if ! command_exists docker; then
 fi
 
 if ! command_exists ray; then
-  echo -e "❌ Ray not found. Please install Ray using: pip install ray[default]==2.46.0"
+  echo -e "❌ Ray not found. Please install Ray using: pip install ray[default]==2.49.2"
   missing_deps=1
 fi
 
@@ -80,8 +80,8 @@ fi
 
 echo -e "✅ All required prerequisites are installed\n"
 
-# Step 1: Start MinIO using Docker Compose
-echo -e "${YELLOW}Step 1/3: Starting MinIO with Docker Compose...${NC}"
+# Step 1: Start MinIO, Prometheus, and Grafana using Docker Compose
+echo -e "${YELLOW}Step 1/4: Starting services with Docker Compose (MinIO, Prometheus, Grafana)...${NC}"
 if is_port_in_use 9000; then
   echo -e "MinIO seems to be already running on port 9000"
 else
@@ -90,16 +90,25 @@ else
   sleep 5
 fi
 
-# Check if MinIO is responsive
+# Check if services are responsive
 curl -s -o /dev/null http://localhost:9000
 if [ $? -eq 0 ]; then
-  echo -e "✅ MinIO started successfully\n"
-else
-  echo -e "⚠️ MinIO may not have started properly, but continuing anyway...\n"
+  echo -e "✅ MinIO started successfully"
 fi
 
+curl -s -o /dev/null http://localhost:9090
+if [ $? -eq 0 ]; then
+  echo -e "✅ Prometheus started successfully"
+fi
+
+curl -s -o /dev/null http://localhost:3000
+if [ $? -eq 0 ]; then
+  echo -e "✅ Grafana started successfully"
+fi
+echo ""
+
 # Step 2: Start Ray
-echo -e "${YELLOW}Step 2/3: Starting Ray cluster...${NC}"
+echo -e "${YELLOW}Step 2/4: Starting Ray cluster with metrics enabled...${NC}"
 if is_port_in_use 8265; then
   echo -e "Ray seems to be already running on port 8265"
 else
@@ -107,6 +116,7 @@ else
     --port=6379 \
     --dashboard-port=8265 \
     --ray-client-server-port=10001 \
+    --metrics-export-port=8080 \
     --node-ip-address=127.0.0.1 \
     --dashboard-host=127.0.0.1 &
   RAY_PID=$!
@@ -122,8 +132,44 @@ else
   echo -e "⚠️ Ray may not have started properly, but continuing anyway...\n"
 fi
 
+# Step 2.5: Auto-setup Grafana dashboards from Ray
+echo -e "${YELLOW}Setting up Grafana dashboards from Ray...${NC}"
+RAY_DASHBOARD_DIR="/tmp/ray/session_latest/metrics/grafana/dashboards"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+DASHBOARD_DEST="$PROJECT_ROOT/config/grafana/provisioning/dashboards/json"
+
+# Create destination directory if it doesn't exist
+mkdir -p "$DASHBOARD_DEST"
+
+# Wait a moment for Ray to generate dashboard files
+sleep 2
+
+# Copy dashboard JSON files if they exist
+if [ -d "$RAY_DASHBOARD_DIR" ] && ls "$RAY_DASHBOARD_DIR"/*.json 1> /dev/null 2>&1; then
+  COPIED_COUNT=0
+  for dashboard in "$RAY_DASHBOARD_DIR"/*.json; do
+    dashboard_name=$(basename "$dashboard")
+    cp "$dashboard" "$DASHBOARD_DEST/" 2>/dev/null
+    ((COPIED_COUNT++))
+  done
+  echo -e "✅ Copied $COPIED_COUNT Ray dashboard(s) to Grafana"
+  
+  # Restart Grafana to load new dashboards if it's running
+  if docker compose ps grafana 2>/dev/null | grep -q "Up"; then
+    echo -e "⏳ Restarting Grafana to load dashboards..."
+    (cd "$PROJECT_ROOT" && docker compose restart grafana > /dev/null 2>&1)
+    sleep 3
+    echo -e "✅ Grafana restarted with new dashboards\n"
+  else
+    echo -e "${YELLOW}⚠ Grafana not running yet. Dashboards will load when Grafana starts.\n${NC}"
+  fi
+else
+  echo -e "${YELLOW}⚠ Ray dashboards not found yet. You can run 'make setup-metrics' later to import them.\n${NC}"
+fi
+
 # Step 3: Start Streamlit app
-echo -e "${YELLOW}Step 3/3: Starting Streamlit app...${NC}"
+echo -e "${YELLOW}Step 3/4: Starting Streamlit app...${NC}"
 if is_port_in_use 8501; then
   echo -e "Streamlit seems to be already running on port 8501"
 else
@@ -148,7 +194,11 @@ echo -e "All services are now running. You can access:"
 echo -e "- ${BLUE}MinIO Console:${NC} http://localhost:9001/ (credentials from .env)"
 echo -e "- ${BLUE}Streamlit Dashboard:${NC} http://localhost:8501/"
 echo -e "- ${BLUE}Ray Dashboard:${NC} http://localhost:8265/"
-echo -e "\n${YELLOW}Note:${NC} To stop all services, run: ./stop.sh"
+echo -e "- ${BLUE}Prometheus:${NC} http://localhost:9090/"
+echo -e "- ${BLUE}Grafana:${NC} http://localhost:3000/ (admin/admin)"
+echo -e "\n${YELLOW}Metrics:${NC} Ray metrics are exported on port 8080 and scraped by Prometheus"
+echo -e "${YELLOW}Grafana:${NC} Ray dashboards have been automatically imported and are available in Grafana"
+echo -e "${YELLOW}Note:${NC} To stop all services, run: ./stop.sh"
 echo -e "${YELLOW}Note:${NC} Press Ctrl+C to stop the script, but services will continue running in the background\n"
 
 # Wait for Ctrl+C

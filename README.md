@@ -14,7 +14,11 @@ A local development environment for orchestrating, training, and visualizing mac
 │   │   └── ray-bucket/          # Ray-specific bucket
 ├── docs/                        # Documentation
 │   ├── docker-setup.md          # Docker and Docker Compose guide
-│   └── kuberay-setup.md         # KubeRay setup and usage guide
+│   ├── kuberay-setup.md         # KubeRay setup and usage guide
+│   └── metrics-setup.md         # Metrics and monitoring setup guide
+├── config/                      # Configuration files
+│   ├── prometheus.yml           # Prometheus configuration
+│   └── grafana/                 # Grafana configuration and provisioning
 ├── scripts/                     # Shell scripts for cluster management
 │   ├── init.sh                  # Script to start all services
 │   ├── stop.sh                  # Script to stop all services
@@ -45,11 +49,13 @@ A local development environment for orchestrating, training, and visualizing mac
 
 ### 1. **Ray**
 - **Purpose:** Distributed ML training, hyperparameter tuning, and job submission.
-- **Version:** 2.46.0
+- **Version:** 2.49.2
 - **Features:**
   - Distributed computing framework for machine learning workloads
   - REST API for job submission
   - Web dashboard for monitoring jobs and clusters
+  - Metrics export for Prometheus integration
+  - Built-in Grafana dashboard support
 
 ### 2. **Streamlit**
 - **Purpose:** Interactive dashboard for cluster status and S3 browsing.
@@ -69,9 +75,30 @@ A local development environment for orchestrating, training, and visualizing mac
   - MinIO Server: 9000
   - Web Console: 9001
 
+### 4. **Prometheus**
+- **Purpose:** Metrics collection and time-series database for monitoring Ray cluster.
+- **Configured in:** [`docker-compose.yaml`](docker-compose.yaml), [`config/prometheus.yml`](config/prometheus.yml)
+- **Features:**
+  - Scrapes metrics from Ray on port 8080
+  - Stores time-series data for historical analysis
+  - Provides query interface for custom metrics
+- **Port:** 9090
+
+### 5. **Grafana**
+- **Purpose:** Metrics visualization and dashboard for Ray cluster monitoring.
+- **Configured in:** [`docker-compose.yaml`](docker-compose.yaml)
+- **Features:**
+  - Pre-configured Prometheus datasource
+  - Supports Ray's default dashboards
+  - Customizable dashboards and alerts
+- **Port:** 3000
+- **Default credentials:** admin/admin
+
 ---
 
 ## Getting Started
+
+> **Quick Start:** See [QUICKSTART.md](QUICKSTART.md) for a fast-track guide to get running in minutes!
 
 ### Prerequisites
 
@@ -116,8 +143,9 @@ For KubeRay setup, you'll also need:
 
 3. **Install dependencies:**
    ```sh
-   pip install -r streamlit_app/requirements.txt
-   pip install ray[default]==2.47.0
+   uv venv
+   source .venv/bin/activate
+   uv lock
    ```
 
 4. **Start all services at once:**
@@ -129,8 +157,9 @@ For KubeRay setup, you'll also need:
    ```
 
    This will:
-   - Start MinIO using Docker Compose
-   - Launch Ray as a head node with client server port 10001
+   - Start MinIO, Prometheus, and Grafana using Docker Compose
+   - Launch Ray as a head node with client server port 10001 and metrics export on port 8080
+   - Automatically import Ray's default Grafana dashboards
    - Start the Streamlit dashboard
 
    Alternatively, you can directly use the scripts:
@@ -152,6 +181,7 @@ For KubeRay setup, you'll also need:
      --port=6379 \
      --dashboard-port=8265 \
      --ray-client-server-port=10001 \
+     --metrics-export-port=8080 \
      --node-ip-address=127.0.0.1 \
      --dashboard-host=127.0.0.1
    ```
@@ -165,6 +195,8 @@ For KubeRay setup, you'll also need:
    - **MinIO Console:** http://localhost:9001/ (credentials from .env)
    - **Streamlit Dashboard:** http://localhost:8501/
    - **Ray Dashboard:** http://localhost:8265/
+   - **Prometheus:** http://localhost:9090/
+   - **Grafana:** http://localhost:3000/ (default: admin/admin)
 
 ### KubeRay Setup (Alternative)
 
@@ -207,6 +239,8 @@ For a more production-like setup using Kubernetes and KubeRay:
    - **MinIO Console:** http://localhost:9001/
    - **Streamlit Dashboard:** http://localhost:8501/
    - **Ray Dashboard:** http://localhost:8265/
+   - **Prometheus:** http://localhost:9090/
+   - **Grafana:** http://localhost:3000/ (default: admin/admin)
 
 **KubeRay Benefits:**
 - Production-like Kubernetes environment
@@ -267,9 +301,23 @@ The ML Homelab uses the following architecture:
 |                |     |              |     |   Inference)  |
 +-------+--------+     +------+-------+     +-------+-------+
         |                     |                     |
+        |                     | (metrics:8080)      |
+        |                     v                     |
+        |              +------+-------+             |
+        |              |              |             |
+        |              |  Prometheus  |             |
+        |              |  (Port 9090) |             |
+        |              +------+-------+             |
         |                     |                     |
-        v                     v                     v
-+-------+---------------------+---------------------+-------+
+        |                     v                     |
+        |              +------+-------+             |
+        |              |              |             |
+        |              |   Grafana    |             |
+        |              |  (Port 3000) |             |
+        |              +--------------+             |
+        |                                           |
+        v                                           v
++-------+-------------------------------------------+-------+
 |                                                           |
 |                     MinIO Storage                         |
 |                  (Ports 9000/9001)                        |
@@ -279,6 +327,9 @@ The ML Homelab uses the following architecture:
 
 - **Ray Client Server** (Port 10001): Allows job submissions via Ray client API
 - **Ray Dashboard** (Port 8265): Provides monitoring and management UI for Ray jobs
+- **Ray Metrics Export** (Port 8080): Exports Prometheus-compatible metrics
+- **Prometheus** (Port 9090): Collects and stores time-series metrics from Ray
+- **Grafana** (Port 3000): Visualizes Ray metrics with pre-built dashboards
 - **MinIO Server** (Port 9000): S3-compatible API endpoint
 - **MinIO Console** (Port 9001): Web UI for MinIO management
 
@@ -288,7 +339,44 @@ You can monitor Ray jobs through:
 
 1. **Streamlit Dashboard**: Shows real-time job status and logs
 2. **Ray Dashboard**: http://localhost:8265/ - Detailed cluster and job metrics
-3. **Job Logs**: Available in the Streamlit UI under the Training/Inference tabs
+3. **Grafana**: http://localhost:3000/ - Visual metrics dashboards for Ray cluster performance
+4. **Prometheus**: http://localhost:9090/ - Query and explore raw metrics data
+5. **Job Logs**: Available in the Streamlit UI under the Training/Inference tabs
+
+### Metrics and Monitoring
+
+The project includes a full metrics stack for monitoring Ray cluster performance:
+
+#### Ray Metrics
+Ray automatically exports metrics on port 8080, including:
+- **System metrics**: CPU, memory, disk, and network usage per node
+- **Application metrics**: Task execution times, actor lifecycle, object store usage
+- **Job metrics**: Job submission, execution status, and resource utilization
+
+#### Prometheus
+Prometheus scrapes metrics from Ray every 15 seconds and stores them for historical analysis. Access the Prometheus UI at http://localhost:9090/ to:
+- Run PromQL queries
+- View metrics targets and their health
+- Explore available metrics
+
+#### Grafana
+Grafana provides visual dashboards for Ray metrics at http://localhost:3000/ (admin/admin). Features include:
+- Pre-configured Prometheus datasource
+- Ray's default dashboards (automatically imported on startup)
+- Customizable panels and alerts
+
+Ray's default Grafana dashboards are **automatically imported** when you run `make start` or `scripts/init.sh`. The dashboards will be available in Grafana under the "Ray" folder.
+
+If you need to manually re-import the dashboards:
+```bash
+make setup-metrics
+# or
+scripts/setup-metrics.sh
+```
+
+For more information, see:
+- [Ray Metrics Documentation](https://docs.ray.io/en/latest/cluster/metrics.html)
+- [Detailed Metrics Setup Guide](docs/metrics-setup.md)
 
 ### Streamlit Dashboard
 
@@ -371,8 +459,9 @@ MIT License. See [LICENSE](LICENSE) for details.
 
 The `scripts/init.sh` script automates the startup of all services:
 - Checks for prerequisites (Docker, Ray, Streamlit)
-- Starts MinIO using Docker Compose
-- Starts Ray as a head node with the client server
+- Starts MinIO, Prometheus, and Grafana using Docker Compose
+- Starts Ray as a head node with the client server and metrics export
+- Automatically imports Ray's default Grafana dashboards
 - Starts the Streamlit application
 - Provides status checks and URLs for each service
 - Supports `--kuberay` flag for KubeRay mode
@@ -403,9 +492,10 @@ The Makefile provides convenient shortcuts:
 
 **Local Ray Setup:**
 ```sh
-make run    # Start the Streamlit app only
-make start  # Start all services (calls init.sh)
-make stop   # Stop all services (calls stop.sh)
+make run           # Start the Streamlit app only
+make start         # Start all services (calls init.sh)
+make stop          # Stop all services (calls stop.sh)
+make setup-metrics # Manually re-import Ray dashboards to Grafana
 ```
 
 **KubeRay Setup:**

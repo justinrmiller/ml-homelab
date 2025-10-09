@@ -1,0 +1,5 @@
+# This directory will contain Ray dashboard JSON files
+# You can copy Ray's default Grafana dashboards from:
+# /tmp/ray/session_latest/metrics/grafana/dashboards/
+# after starting a Ray cluster
+

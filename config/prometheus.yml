@@ -1,0 +1,31 @@
+# Prometheus configuration for Ray metrics
+# This configuration scrapes metrics from Ray nodes
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'ray-cluster-monitor'
+
+# Scrape from Ray metrics endpoints
+scrape_configs:
+  # Ray metrics - using static configuration
+  # When Ray starts with --metrics-export-port=8080, it exposes metrics on that port
+  - job_name: 'ray'
+    static_configs:
+      - targets: ['host.docker.internal:8080']
+        labels:
+          cluster: 'local-ray-cluster'
+    
+    # Uncomment the following to use Ray's auto-discovery instead
+    # Requires mounting Ray's service discovery file into the Prometheus container
+    # file_sd_configs:
+    #   - files:
+    #     - '/tmp/ray/prom_metrics_service_discovery.json'
+    #     refresh_interval: 10s
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+

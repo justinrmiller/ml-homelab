@@ -1,16 +1,20 @@
-.PHONY: run start stop kuberay-start kuberay-stop kuberay-status
+.PHONY: run start stop setup-metrics kuberay-start kuberay-stop kuberay-status
 
 # Start Streamlit app only
 run:
-	streamlit run streamlit_app/app.py
+	uv run streamlit run streamlit_app/app.py
 
-# Start all services (MinIO, Ray, and Streamlit)
+# Start all services (MinIO, Prometheus, Grafana, Ray, and Streamlit)
 start:
 	scripts/init.sh
 
 # Stop all services
 stop:
 	scripts/stop.sh
+
+# Setup Ray metrics and import Grafana dashboards
+setup-metrics:
+	scripts/setup-metrics.sh
 
 # Start KubeRay cluster with all services
 kuberay-start:
