@@ -1,29 +1,25 @@
-.PHONY: run start stop setup-metrics kuberay-start kuberay-stop kuberay-status
+.PHONY: run start stop status sync job
+
+# Sync Python dependencies
+sync:
+	uv sync
 
 # Start Streamlit app only
 run:
 	uv run streamlit run streamlit_app/app.py
 
-# Start all services (MinIO, Prometheus, Grafana, Ray, and Streamlit)
-start:
-	scripts/init.sh
-
-# Stop all services
-stop:
-	scripts/stop.sh
-
-# Setup Ray metrics and import Grafana dashboards
-setup-metrics:
-	scripts/setup-metrics.sh
-
 # Start KubeRay cluster with all services
-kuberay-start:
+start:
 	scripts/kuberay-init.sh
 
 # Stop KubeRay cluster and all services
-kuberay-stop:
+stop:
 	scripts/kuberay-stop.sh
 
-# Check KubeRay cluster status
-kuberay-status:
+# Check cluster status
+status:
 	scripts/kuberay-status.sh
+
+# Submit a Ray job (usage: make job SCRIPT=hello_ray_job.py)
+job:
+	uv run ray job submit --address http://localhost:8265 -- python $(SCRIPT)

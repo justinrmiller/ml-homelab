@@ -1,23 +1,23 @@
 # ML Homelab Quick Start Guide
 
-Get up and running with Ray 2.49.2 and comprehensive metrics tracking in minutes!
+Get up and running with KubeRay, MinIO, and metrics monitoring in minutes!
 
 ## Prerequisites
 
-- Docker and Docker Compose
-- Python 3.10 or 3.11
-- [uv](https://github.com/astral-sh/uv) (Python package installer)
+- Docker or Podman
+- Python 3.11+
+- [uv](https://docs.astral.sh/uv/) (Python package manager)
+
+The setup script will automatically install Kind, Helm, and kubectl via Homebrew if missing.
 
 ## 1. Install Python Dependencies
 
 ```bash
-# Create and activate virtual environment
-uv venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-
-# Install dependencies
+# Sync dependencies (uv creates the venv automatically)
 uv sync
 ```
+
+> **Note:** `uv sync` automatically creates a `.venv` virtual environment and installs all dependencies from `pyproject.toml` and `uv.lock`. No need to manually create or activate a venv — all `make` targets use `uv run` which handles this transparently.
 
 ## 2. Start All Services
 
@@ -25,13 +25,15 @@ uv sync
 make start
 ```
 
-That's it! This single command will:
-- ✅ Start MinIO (S3-compatible storage)
-- ✅ Start Prometheus (metrics collection)
-- ✅ Start Grafana (metrics visualization)
-- ✅ Start Ray 2.49.2 with metrics enabled
-- ✅ **Automatically import Ray's Grafana dashboards**
-- ✅ Start Streamlit (web UI)
+This single command will:
+- Check prerequisites and sync Python dependencies via `uv`
+- Create a local Kubernetes cluster (Kind)
+- Install KubeRay operator and Ray cluster
+- Start MinIO (S3-compatible storage)
+- Start Prometheus (metrics collection)
+- Start Grafana (metrics visualization)
+- Set up port forwarding for Ray services
+- Start Streamlit (web UI)
 
 ## 3. Access Your Services
 
@@ -43,29 +45,25 @@ That's it! This single command will:
 | **Streamlit** | http://localhost:8501/ | ML job submission UI |
 | **MinIO** | http://localhost:9001/ | S3 storage console |
 
-## 4. Explore Ray Dashboards in Grafana
-
-1. Open http://localhost:3000/ 
-2. Login with `admin` / `admin`
-3. Navigate to **Dashboards → Browse → Ray**
-4. Explore pre-built dashboards showing:
-   - CPU, memory, and disk usage
-   - Task and actor metrics
-   - Object store utilization
-   - Job execution metrics
-
-## 5. Run Your First ML Job
+## 4. Run Your First ML Job
 
 ```bash
-# Simple Ray job
-python hello_ray_job.py
+# Submit a simple Ray job
+uv run ray job submit --address http://localhost:8265 -- python -c "import ray; ray.init(); print(ray.cluster_resources())"
+
+# Or use the Makefile shortcut
+make job SCRIPT=hello_ray_job.py
 
 # MNIST training example
 cd streamlit_app/jobs/mnist_training
 ./run.sh
 ```
 
-Watch the metrics update in real-time in Grafana!
+## 5. Check Cluster Status
+
+```bash
+make status
+```
 
 ## Stop All Services
 
@@ -73,151 +71,44 @@ Watch the metrics update in real-time in Grafana!
 make stop
 ```
 
-## What's Automatic?
-
-### 🎯 Automatic Metrics Setup
-
-When you run `make start`, the system automatically:
-
-1. **Starts all infrastructure services**
-   - MinIO for S3 storage
-   - Prometheus for metrics collection
-   - Grafana for visualization
-
-2. **Starts Ray with metrics enabled**
-   - Exports metrics on port 8080
-   - Configures Prometheus scraping
-
-3. **Imports Ray's default Grafana dashboards**
-   - Waits for Ray to generate dashboard files
-   - Copies them to Grafana's provisioning directory
-   - Restarts Grafana to load the dashboards
-   - **No manual intervention needed!**
-
-4. **Starts your web interface**
-   - Streamlit dashboard for job management
-
-### 📊 Available Metrics
-
-Ray automatically exports comprehensive metrics:
-
-**System Metrics:**
-- CPU utilization per node
-- Memory usage and availability
-- Disk usage
-- Network I/O
-
-**Application Metrics:**
-- Task execution times and states
-- Actor lifecycle and performance
-- Object store usage
-
-**Job Metrics:**
-- Job submission and execution
-- Resource utilization per job
-
-### 🔍 Example Prometheus Queries
-
-Try these in Prometheus (http://localhost:9090/):
-
-```promql
-# CPU usage
-ray_node_cpu_utilization
-
-# Memory usage percentage
-100 * (ray_node_mem_used / (ray_node_mem_used + ray_node_mem_available))
-
-# Running tasks
-ray_tasks{State="RUNNING"}
-
-# Object store usage
-ray_object_store_memory
-```
-
 ## Troubleshooting
-
-### Dashboards Not Showing?
-
-If Ray dashboards don't appear in Grafana:
-
-```bash
-# Manually re-import dashboards
-make setup-metrics
-```
 
 ### Services Not Starting?
 
-Check that ports are available:
+Check that Docker/Podman is running and ports are available:
 ```bash
-# Check if ports are in use
 lsof -i :8265  # Ray
 lsof -i :9090  # Prometheus
 lsof -i :3000  # Grafana
+lsof -i :9000  # MinIO
 ```
 
-Stop conflicting services or modify ports in `.env` file.
-
-### Check Service Status
+### Check Detailed Status
 
 ```bash
-# Docker services
-docker compose ps
+# Full cluster status
+make status
 
-# Ray status
-ray status
+# Kubernetes pods
+kubectl get pods --selector=ray.io/cluster=raycluster-kuberay
 
-# Check metrics endpoint
-curl http://localhost:8080/metrics
-```
+# Ray head logs
+kubectl logs -l ray.io/node-type=head
 
-## Next Steps
-
-- **[Full README](README.md)** - Complete documentation
-- **[Metrics Setup Guide](docs/metrics-setup.md)** - Detailed metrics configuration
-- **[Docker Setup](docs/docker-setup.md)** - Docker and Docker Compose guide
-- **[KubeRay Setup](docs/kuberay-setup.md)** - Production Kubernetes setup
-
-## Architecture at a Glance
-
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│  Streamlit  │────▶│ Ray 2.49.2  │────▶│   ML Jobs   │
-│   :8501     │     │   :8265     │     │  (Training/ │
-└─────────────┘     └──────┬──────┘     │  Inference) │
-                           │            └─────────────┘
-                           │ metrics:8080
-                    ┌──────┼──────┐
-                    │      │      │
-                    ▼      ▼      ▼
-             ┌──────────┐ ┌──────────┐ ┌──────────┐
-             │  MinIO   │ │Prometheus│ │ Grafana  │
-             │  :9000   │ │  :9090   │ │  :3000   │
-             └──────────┘ └──────────┘ └──────────┘
+# Container service logs (Docker or Podman)
+docker compose logs -f       # Docker
+podman-compose logs -f       # Podman
 ```
 
 ## Useful Commands
 
 ```bash
-# Start all services
-make start
-
-# Stop all services
-make stop
-
-# Run Streamlit only
-make run
-
-# Re-import Ray dashboards
-make setup-metrics
-
-# View logs
-docker compose logs -f
-
-# Check Ray status
-ray status
-
-# List Ray jobs
-ray job list
+make sync     # Sync Python dependencies with uv
+make start    # Start all services
+make stop     # Stop all services
+make status   # Check cluster status
+make run      # Run Streamlit only
+make job SCRIPT=hello_ray_job.py  # Submit a Ray job
 ```
 
 ## Environment Configuration
@@ -238,13 +129,13 @@ GRAFANA_ADMIN_USER=admin
 GRAFANA_ADMIN_PASSWORD=admin
 
 # Ray
-METRICS_EXPORT_PORT=8080
 DASHBOARD_PORT=8265
+HEAD_NODE_PORT=10001
+PORT=6379
+RAY_ADDRESS=ray://127.0.0.1:10001
 ```
 
----
+## Next Steps
 
-**That's it!** 🎉 You now have a fully functional ML development environment with comprehensive metrics tracking.
-
-Start building and monitoring your distributed ML workloads! 🚀
-
+- **[Full README](README.md)** - Complete documentation
+- **[KubeRay Setup](docs/kuberay-setup.md)** - Detailed KubeRay configuration

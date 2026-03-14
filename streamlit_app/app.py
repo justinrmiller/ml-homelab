@@ -5,7 +5,6 @@ import socket
 import time
 
 import boto3
-import ray
 import streamlit as st
 from ray.job_submission import JobStatus, JobSubmissionClient
 
@@ -32,30 +31,17 @@ def is_ray_running():
         return False
 
 
-def is_kuberay_running():
-    """Check if KubeRay client server is running."""
-    try:
-        s = socket.create_connection(("localhost", 10001), timeout=2)
-        s.close()
-        return True
-    except:  # noqa: B001, E722
-        return False
-
-
-# Conditional init if already running
-if is_ray_running():
-    if is_kuberay_running():
-        # KubeRay setup - use Ray client
-        ray.init(address="ray://localhost:10001", ignore_reinit_error=True)
-    else:
-        # Local Ray setup - use direct GCS connection
-        ray.init(address="localhost:6379", ignore_reinit_error=True)
+# Connect to Ray cluster via the dashboard (HTTP-based, works with KubeRay).
+# We intentionally avoid ray.init(address="ray://...") — the Ray Client protocol
+# is resource-heavy (spawns a proxy server per connection) and deprecated.
+# All job submission uses the Jobs API (JobSubmissionClient) over HTTP instead.
+RAY_DASHBOARD_URL = "http://localhost:8265"
 
 
 def wire_job(job_name: str, entrypoint: str, working_dir: str = "./streamlit_app/jobs"):
     """Configure a job."""
     if st.button(key=job_name, label=f"▶ Run {job_name} job"):
-        client = JobSubmissionClient(address="http://127.0.0.1:8265")
+        client = JobSubmissionClient(address=RAY_DASHBOARD_URL)
         with st.spinner("Uploading code & submitting job…"):
             job_id = client.submit_job(
                 entrypoint=entrypoint,

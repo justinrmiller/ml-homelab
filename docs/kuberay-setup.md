@@ -10,23 +10,35 @@ The KubeRay setup consists of:
 - **Kind cluster**: Local Kubernetes cluster for development
 - **KubeRay operator**: Manages Ray cluster lifecycle
 - **Ray cluster**: Distributed computing cluster for ML workloads
-- **MinIO**: Object storage for data persistence
+- **MinIO**: Object storage for data persistence (Docker Compose)
+- **Prometheus**: Metrics collection (Docker Compose)
+- **Grafana**: Metrics visualization (Docker Compose)
 - **Streamlit**: Web interface for job management
 
 ## Prerequisites
 
 ### Required Tools
-- **Docker**: Container runtime
+- **[uv](https://docs.astral.sh/uv/)**: Python package manager (manages Ray, Streamlit, and all Python deps)
+- **Docker** or **Podman**: Container runtime
 - **Kind**: Local Kubernetes cluster
 - **Helm**: Kubernetes package manager
 - **kubectl**: Kubernetes command-line tool
-- **Ray**: Python library for distributed computing
-- **Streamlit**: Web framework for data applications
 
 ### Installation
-The setup script will automatically install missing tools using Homebrew:
+
+Install uv:
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+The setup script will automatically install Kind, Helm, and kubectl via Homebrew if missing:
 ```bash
 brew install kind helm kubectl
+```
+
+Sync Python dependencies:
+```bash
+uv sync
 ```
 
 ## Quick Start
@@ -35,13 +47,13 @@ brew install kind helm kubectl
 
 ```bash
 # Start KubeRay cluster
-make kuberay-start
+make start
 
 # Check cluster status
-make kuberay-status
+make status
 
 # Stop KubeRay cluster
-make kuberay-stop
+make stop
 ```
 
 ### Using Direct Scripts
@@ -57,22 +69,12 @@ scripts/kuberay-status.sh
 scripts/kuberay-stop.sh
 ```
 
-### Using Unified Interface
-
-```bash
-# Start with KubeRay
-scripts/init.sh --kuberay
-
-# Stop KubeRay cluster
-scripts/stop.sh --kuberay
-```
-
 ## Detailed Setup Process
 
 ### 1. Cluster Creation
 ```bash
 # Create Kind cluster with specific Kubernetes version
-kind create cluster --image=kindest/node:v1.33.1
+kind create cluster --image=kindest/node:v1.35.0
 ```
 
 ### 2. KubeRay Operator Installation
@@ -88,10 +90,10 @@ helm install kuberay-operator kuberay/kuberay-operator --create-namespace --name
 ### 3. Ray Cluster Deployment
 ```bash
 # For ARM architecture (Apple Silicon)
-helm install raycluster kuberay/ray-cluster --version 1.3.2 --set 'image.tag=2.47.0-aarch64'
+helm install raycluster kuberay/ray-cluster --version 1.5.1 --set 'image.tag=2.44.1-aarch64'
 
 # For x86_64 architecture
-helm install raycluster kuberay/ray-cluster --version 1.3.2
+helm install raycluster kuberay/ray-cluster --version 1.5.1
 ```
 
 ### 4. Service Access
@@ -102,6 +104,8 @@ kubectl port-forward service/raycluster-kuberay-head-svc 8265:8265
 # Access services
 # Ray Dashboard: http://localhost:8265/
 # MinIO Console: http://localhost:9001/
+# Prometheus: http://localhost:9090/
+# Grafana: http://localhost:3000/ (admin/admin)
 # Streamlit App: http://localhost:8501/
 ```
 
@@ -114,16 +118,16 @@ Configure KubeRay through `.env` file:
 # KubeRay Configuration
 KUBERAY_NAMESPACE=default
 KUBERAY_CLUSTER_NAME=raycluster-kuberay
-KUBERAY_RAY_VERSION=2.47.0
-KUBERAY_OPERATOR_VERSION=1.3.2
+KUBERAY_RAY_VERSION=2.44.1
+KUBERAY_OPERATOR_VERSION=1.5.1
 KIND_CLUSTER_NAME=kind
-KIND_NODE_IMAGE=kindest/node:v1.33.1
+KIND_NODE_IMAGE=kindest/node:v1.35.0
 ```
 
 ### Cluster Specifications
-- **Ray Version**: 2.47.0
-- **Kubernetes Version**: 1.33.1
-- **Operator Version**: 1.3.2
+- **Ray Version**: 2.44.1
+- **Kubernetes Version**: 1.35.0
+- **Operator Version**: 1.5.1
 - **Default Namespace**: default
 
 ## Usage
@@ -132,13 +136,16 @@ KIND_NODE_IMAGE=kindest/node:v1.33.1
 
 ```bash
 # Submit a simple job
-ray job submit --address http://localhost:8265 -- python -c "import ray; ray.init(); print(ray.cluster_resources())"
+uv run ray job submit --address http://localhost:8265 -- python -c "import ray; ray.init(); print(ray.cluster_resources())"
 
 # Submit a file-based job
-ray job submit --address http://localhost:8265 -- python your_script.py
+uv run ray job submit --address http://localhost:8265 -- python your_script.py
 
 # Submit with working directory
-ray job submit --address http://localhost:8265 --working-dir . -- python your_script.py
+uv run ray job submit --address http://localhost:8265 --working-dir . -- python your_script.py
+
+# Or use the Makefile shortcut
+make job SCRIPT=your_script.py
 ```
 
 ### Monitoring and Management
@@ -165,7 +172,7 @@ kubectl port-forward service/raycluster-kuberay-head-svc 8265:8265
 The `scripts/kuberay-status.sh` script provides comprehensive cluster health checking:
 
 ### Service Health Checks
-- ✅ **Prerequisites**: kubectl, helm, kind, docker availability
+- ✅ **Prerequisites**: uv, kubectl, helm, kind, docker/podman availability
 - ✅ **Kind Cluster**: Cluster existence and connectivity
 - ✅ **KubeRay Operator**: Installation and pod status
 - ✅ **Ray Cluster**: Deployment and pod readiness
@@ -176,6 +183,7 @@ The `scripts/kuberay-status.sh` script provides comprehensive cluster health che
 ### Example Status Output
 ```
 === KubeRay Cluster Status ===
+✅ uv: uv 0.7.x
 ✅ kubectl: Available
 ✅ Kind cluster: Running
 ✅ KubeRay operator: Installed
@@ -197,7 +205,7 @@ docker ps
 
 # Delete and recreate cluster
 kind delete cluster
-kind create cluster --image=kindest/node:v1.33.1
+kind create cluster --image=kindest/node:v1.35.0
 ```
 
 #### 2. Ray Pods Not Ready
@@ -231,7 +239,7 @@ helm list --all-namespaces
 
 # Uninstall and reinstall
 helm uninstall raycluster
-helm install raycluster kuberay/ray-cluster --version 1.3.2
+helm install raycluster kuberay/ray-cluster --version 1.5.1
 ```
 
 ### Resource Management
@@ -259,18 +267,6 @@ helm uninstall raycluster
 helm uninstall kuberay-operator -n kuberay-system
 kind delete cluster
 ```
-
-## Comparison: KubeRay vs Local Ray
-
-| Feature | Local Ray | KubeRay |
-|---------|-----------|---------|
-| **Setup Complexity** | Simple | Moderate |
-| **Resource Management** | Manual | Automatic |
-| **Scalability** | Limited | High |
-| **Fault Tolerance** | Basic | Advanced |
-| **Multi-tenancy** | No | Yes |
-| **Monitoring** | Basic | Rich |
-| **Storage** | Local | Distributed |
 
 ## Best Practices
 

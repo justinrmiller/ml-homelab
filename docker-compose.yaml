@@ -1,14 +1,7 @@
-#x-common-env: &common_env
-#  AWS_ENDPOINT_URL_S3: http://minio:9000
-#  AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minioadmin}
-#  AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
-#  AWS_DEFAULT_REGION: us-east-1
-#  AWS_S3_FORCE_PATH_STYLE: "true"
-
 services:
 
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v3.10.0
     container_name: prometheus_server
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -29,7 +22,7 @@ services:
       start_period: 30s
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:12.4.1
     container_name: grafana_server
     ports:
       - "${GRAFANA_PORT:-3000}:3000"
@@ -40,6 +33,10 @@ services:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
       - GF_USERS_ALLOW_SIGN_UP=false
+      # Allow Grafana to be embedded in Ray Dashboard iframes
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
     depends_on:
       prometheus:
         condition: service_healthy
@@ -90,5 +87,5 @@ services:
         mc mb minio/app-bucket --ignore-existing &&
         mc mb minio/ray-bucket --ignore-existing &&
         mc anonymous set public minio/app-bucket &&
-        echo 'Buckets ready ✨'"
+        echo 'Buckets ready'"
     restart: "no"

@@ -1,0 +1,52 @@
+# Ray Cluster Helm Values
+# Customize these settings for your environment.
+# See: https://github.com/ray-project/kuberay-helm/tree/main/helm-chart/ray-cluster
+
+image:
+  # tag is set dynamically per-architecture in kuberay-init.sh
+  # ARM (Apple Silicon): 2.44.1-py311-aarch64
+  # x86_64:              2.44.1-py311
+  #
+  # NOTE: Ray 2.45.0+ has a known dashboard crash on ARM (github.com/ray-project/ray/issues/55255).
+  # Stay on 2.44.x until the fix is released.
+  pullPolicy: IfNotPresent
+
+head:
+  rayStartParams:
+    port: "6379"
+    dashboard-port: "8265"
+    ray-client-server-port: "10001"
+    dashboard-host: "0.0.0.0"
+    metrics-export-port: "8080"
+  containerEnv:
+    # RAY_GRAFANA_HOST: used server-side by the dashboard to proxy Grafana requests.
+    # RAY_GRAFANA_IFRAME_HOST: used client-side (browser) for Grafana iframe URLs.
+    # RAY_PROMETHEUS_HOST: used server-side to query Prometheus for time-series data.
+    #
+    # Server-side URLs (RAY_GRAFANA_HOST, RAY_PROMETHEUS_HOST) must be reachable
+    # from inside the pod. kuberay-init.sh connects the Prometheus and Grafana
+    # containers to the Kind network and injects their IPs via --set overrides.
+    # The placeholder values below are overridden at deploy time.
+    - name: RAY_GRAFANA_HOST
+      value: "http://grafana:3000"
+    - name: RAY_PROMETHEUS_HOST
+      value: "http://prometheus:9090"
+    - name: RAY_GRAFANA_IFRAME_HOST
+      value: "http://localhost:3000"
+    - name: RAY_PROMETHEUS_NAME
+      value: "Prometheus"
+  resources:
+    limits:
+      cpu: "4"
+      memory: "8G"
+    requests:
+      cpu: "2"
+      memory: "4G"
+worker:
+  resources:
+    limits:
+      cpu: "4"
+      memory: "8G"
+    requests:
+      cpu: "2"
+      memory: "4G"

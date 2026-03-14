@@ -1,6 +1,6 @@
 # ML Homelab
 
-A local development environment for orchestrating, training, and visualizing machine learning workflows using Ray and Streamlit. This project provides a reproducible setup for running distributed ML experiments and interactive dashboards, with local emulation of AWS S3 via MinIO.
+A local development environment for orchestrating, training, and visualizing machine learning workflows using KubeRay and Streamlit. This project provides a reproducible setup for running distributed ML experiments on Kubernetes, with S3-compatible storage via MinIO and metrics monitoring via Prometheus and Grafana.
 
 ---
 
@@ -12,22 +12,20 @@ A local development environment for orchestrating, training, and visualizing mac
 │   ├── minio/                   # MinIO S3-compatible storage
 │   │   ├── app-bucket/          # General application bucket
 │   │   └── ray-bucket/          # Ray-specific bucket
+│   ├── prometheus/              # Prometheus time-series data
+│   └── grafana/                 # Grafana configuration data
 ├── docs/                        # Documentation
-│   ├── docker-setup.md          # Docker and Docker Compose guide
-│   ├── kuberay-setup.md         # KubeRay setup and usage guide
-│   └── metrics-setup.md         # Metrics and monitoring setup guide
+│   └── kuberay-setup.md         # KubeRay setup and usage guide
 ├── config/                      # Configuration files
 │   ├── prometheus.yml           # Prometheus configuration
-│   └── grafana/                 # Grafana configuration and provisioning
+│   └── grafana/                 # Grafana provisioning and dashboards
 ├── scripts/                     # Shell scripts for cluster management
-│   ├── init.sh                  # Script to start all services
-│   ├── stop.sh                  # Script to stop all services
+│   ├── common.sh                # Shared utilities and runtime detection
 │   ├── kuberay-init.sh          # KubeRay cluster initialization
 │   ├── kuberay-stop.sh          # KubeRay cluster shutdown
 │   └── kuberay-status.sh        # KubeRay cluster status check
 ├── streamlit_app/               # Streamlit dashboard app
 │   ├── app.py                   # Main Streamlit dashboard
-│   ├── requirements.txt         # Python dependencies for Streamlit
 │   └── jobs/                    # ML jobs for Ray execution
 │       ├── mnist_training/      # MNIST example job
 │       │   ├── train_mnist.py   # Training script
@@ -36,7 +34,9 @@ A local development environment for orchestrating, training, and visualizing mac
 │           └── inference.py     # Inference script
 ├── hello_ray_job.py             # Simple Ray job example
 ├── ray_job_example.py           # Ray job submission example
-├── docker-compose.yaml          # MinIO orchestration
+├── docker-compose.yaml          # MinIO, Prometheus, Grafana orchestration
+├── pyproject.toml               # Python project config (managed by uv)
+├── uv.lock                      # Locked dependencies (committed to git)
 ├── Makefile                     # Simple commands for running services
 ├── .env.example                 # Environment variables template
 ├── LICENSE
@@ -47,15 +47,15 @@ A local development environment for orchestrating, training, and visualizing mac
 
 ## Components
 
-### 1. **Ray**
+### 1. **Ray (via KubeRay)**
 - **Purpose:** Distributed ML training, hyperparameter tuning, and job submission.
-- **Version:** 2.49.2
+- **Deployment:** Kubernetes-based via Kind cluster and KubeRay operator.
 - **Features:**
-  - Distributed computing framework for machine learning workloads
+  - Production-like Kubernetes environment
+  - Better resource management and scaling
+  - Fault tolerance and high availability
   - REST API for job submission
   - Web dashboard for monitoring jobs and clusters
-  - Metrics export for Prometheus integration
-  - Built-in Grafana dashboard support
 
 ### 2. **Streamlit**
 - **Purpose:** Interactive dashboard for cluster status and S3 browsing.
@@ -102,14 +102,11 @@ A local development environment for orchestrating, training, and visualizing mac
 
 ### Prerequisites
 
-- [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/)
-- [Ray](https://docs.ray.io/en/latest/ray-overview/installation.html) for distributed ML
-- [Streamlit](https://streamlit.io/) for the dashboard
-- [Python](https://python.org/) - version 3.10/3.11
+- [Docker](https://www.docker.com/) or [Podman](https://podman.io/) (container runtime)
+- [Python](https://python.org/) 3.11+
+- [uv](https://docs.astral.sh/uv/) (Python package manager)
 
-### KubeRay Prerequisites (Optional)
-
-For KubeRay setup, you'll also need:
+The following tools will be auto-installed via Homebrew if missing:
 - [Kind](https://kind.sigs.k8s.io/) for local Kubernetes cluster
 - [Helm](https://helm.sh/) for Kubernetes package management
 - [kubectl](https://kubernetes.io/docs/tasks/tools/) for Kubernetes CLI
@@ -123,130 +120,46 @@ For KubeRay setup, you'll also need:
    ```
 
 2. **Configure environment variables:**
-   - Check and adjust `.env` file for your environment:
-     - MinIO credentials (default: test-key/test-secret)
-     - Ray configuration settings
-     - Architecture-specific Ray image selection
-   ```
-    # Key settings in .env:
-    AWS_ACCESS_KEY_ID=test-key
-    AWS_SECRET_ACCESS_KEY=test-secret
-    MINIO_ROOT_USER=test-key
-    MINIO_ROOT_PASSWORD=test-secret
-
-    # Ray settings
-    DASHBOARD_PORT=8265
-    HEAD_NODE_PORT=10001
-    PORT=6379
-    RAY_ADDRESS=ray://127.0.0.1:10001
+   ```sh
+   cp .env.example .env
+   # Edit .env to customize credentials and ports
    ```
 
 3. **Install dependencies:**
    ```sh
-   uv venv
-   source .venv/bin/activate
-   uv lock
+   # uv creates the venv and installs everything automatically
+   uv sync
    ```
 
-4. **Start all services at once:**
-
-   Using the convenience commands in the Makefile:
+4. **Start all services:**
    ```sh
-   make start    # Start all services (MinIO, Ray, Streamlit)
-   make stop     # Stop all services
+   make start
    ```
 
    This will:
-   - Start MinIO, Prometheus, and Grafana using Docker Compose
-   - Launch Ray as a head node with client server port 10001 and metrics export on port 8080
-   - Automatically import Ray's default Grafana dashboards
+   - Verify `uv` and sync Python dependencies
+   - Create a Kind Kubernetes cluster
+   - Install KubeRay operator and Ray cluster
+   - Start MinIO, Prometheus, and Grafana via Docker/Podman Compose
+   - Set up port forwarding for Ray services
    - Start the Streamlit dashboard
 
-   Alternatively, you can directly use the scripts:
+5. **Check cluster status:**
    ```sh
-   scripts/init.sh     # Start all services
-   scripts/stop.sh     # Stop all services
+   make status
    ```
 
-   **Alternatively, start services separately:**
-
-   Start MinIO (S3 storage):
-   ```sh
-   docker compose up -d
-   ```
-
-   Start Ray (in a separate terminal):
-   ```sh
-   ray start --head \
-     --port=6379 \
-     --dashboard-port=8265 \
-     --ray-client-server-port=10001 \
-     --metrics-export-port=8080 \
-     --node-ip-address=127.0.0.1 \
-     --dashboard-host=127.0.0.1
-   ```
-
-   Start Streamlit dashboard (in a separate terminal):
-   ```sh
-   make run
-   ```
-
-5. **Access services:**
+6. **Access services:**
+   - **Ray Dashboard:** http://localhost:8265/
+   - **Streamlit Dashboard:** http://localhost:8501/
    - **MinIO Console:** http://localhost:9001/ (credentials from .env)
-   - **Streamlit Dashboard:** http://localhost:8501/
-   - **Ray Dashboard:** http://localhost:8265/
    - **Prometheus:** http://localhost:9090/
    - **Grafana:** http://localhost:3000/ (default: admin/admin)
 
-### KubeRay Setup (Alternative)
-
-For a more production-like setup using Kubernetes and KubeRay:
-
-1. **Start KubeRay cluster:**
+7. **Stop all services:**
    ```sh
-   # Using Makefile
-   make kuberay-start
-   
-   # Or using scripts directly
-   scripts/kuberay-init.sh
-   
-   # Or using unified interface
-   scripts/init.sh --kuberay
+   make stop
    ```
-
-2. **Check cluster status:**
-   ```sh
-   # Using Makefile
-   make kuberay-status
-   
-   # Or using script directly
-   scripts/kuberay-status.sh
-   ```
-
-3. **Stop KubeRay cluster:**
-   ```sh
-   # Using Makefile
-   make kuberay-stop
-   
-   # Or using scripts directly
-   scripts/kuberay-stop.sh
-   
-   # Or using unified interface
-   scripts/stop.sh --kuberay
-   ```
-
-4. **Access services** (same URLs as local setup):
-   - **MinIO Console:** http://localhost:9001/
-   - **Streamlit Dashboard:** http://localhost:8501/
-   - **Ray Dashboard:** http://localhost:8265/
-   - **Prometheus:** http://localhost:9090/
-   - **Grafana:** http://localhost:3000/ (default: admin/admin)
-
-**KubeRay Benefits:**
-- Production-like Kubernetes environment
-- Better resource management and scaling
-- Fault tolerance and high availability
-- Supports multi-tenancy
 
 For detailed KubeRay setup instructions, see [docs/kuberay-setup.md](docs/kuberay-setup.md).
 
@@ -256,18 +169,20 @@ For detailed KubeRay setup instructions, see [docs/kuberay-setup.md](docs/kubera
 
 ### Simple Ray Job
 
-- Run a simple Ray job directly:
+- Submit a job to the Ray cluster:
   ```sh
-  python hello_ray_job.py
+  uv run ray job submit --address http://localhost:8265 -- python hello_ray_job.py
+
+  # Or use the Makefile shortcut
+  make job SCRIPT=hello_ray_job.py
   ```
 
 ### Ray Job Submission
 
-- Submit a job to the Ray cluster and monitor its progress:
+- Submit a job and monitor its progress:
   ```sh
-  python ray_job_example.py
+  uv run python ray_job_example.py
   ```
-  This will submit and monitor the execution of `hello_ray_job.py`.
 
 ### Ray MNIST Training
 
@@ -283,20 +198,17 @@ For detailed KubeRay setup instructions, see [docs/kuberay-setup.md](docs/kubera
 
 - Run inference using a pre-trained ResNet model:
   ```sh
-  cd streamlit_app/jobs/resnet_inference
-  python inference.py
+  uv run python streamlit_app/jobs/resnet_inference/inference.py
   ```
 
 - Or submit the job through the Streamlit UI using the Inference tab.
 
 ### Architecture
 
-The ML Homelab uses the following architecture:
-
 ```
 +----------------+     +--------------+     +----------------+
 |                |     |              |     |                |
-|  Streamlit UI  +---->+  Ray Cluster +---->+  ML Jobs      |
+|  Streamlit UI  +---->+  KubeRay     +---->+  ML Jobs      |
 |  (Port 8501)   |     |  (Port 8265) |     |  (Training &  |
 |                |     |              |     |   Inference)  |
 +-------+--------+     +------+-------+     +-------+-------+
@@ -362,21 +274,8 @@ Prometheus scrapes metrics from Ray every 15 seconds and stores them for histori
 #### Grafana
 Grafana provides visual dashboards for Ray metrics at http://localhost:3000/ (admin/admin). Features include:
 - Pre-configured Prometheus datasource
-- Ray's default dashboards (automatically imported on startup)
+- Ray's default dashboards
 - Customizable panels and alerts
-
-Ray's default Grafana dashboards are **automatically imported** when you run `make start` or `scripts/init.sh`. The dashboards will be available in Grafana under the "Ray" folder.
-
-If you need to manually re-import the dashboards:
-```bash
-make setup-metrics
-# or
-scripts/setup-metrics.sh
-```
-
-For more information, see:
-- [Ray Metrics Documentation](https://docs.ray.io/en/latest/cluster/metrics.html)
-- [Detailed Metrics Setup Guide](docs/metrics-setup.md)
 
 ### Streamlit Dashboard
 
@@ -391,17 +290,13 @@ For more information, see:
 
 ## Testing
 
-This project doesn't currently include automated tests. You can manually test your ML workflows through the Streamlit interface or by running the job scripts directly.
+You can manually test your ML workflows through the Streamlit interface or by running the job scripts directly.
 
 ### Ray Job Testing
 
-You can test the Ray setup with the simple hello_ray_job.py script:
-
 ```sh
-python hello_ray_job.py
+uv run ray job submit --address http://localhost:8265 -- python hello_ray_job.py
 ```
-
-Expected output: "hello world"
 
 ### S3 Connection Testing
 
@@ -434,16 +329,30 @@ print([b["Name"] for b in buckets["Buckets"]])
 - **Extend Streamlit UI:**
   - Edit [`streamlit_app/app.py`](streamlit_app/app.py)
   - Add new tabs, features, or integrations
-  - Current structure uses tabs for S3 browsing, Training jobs, and Inference jobs
 
 - **Install extra Python packages:**
-  - Add to [`streamlit_app/requirements.txt`](streamlit_app/requirements.txt)
-  - Install using `pip install -r streamlit_app/requirements.txt`
+  ```sh
+  uv add <package-name>
+  ```
 
 - **Configure Ray:**
   - Adjust parameters in the `.env` file
-  - Modify the Ray start command in `init.sh`
-  - Add custom Ray configuration in job scripts
+  - Modify Helm values in `scripts/kuberay-init.sh`
+
+---
+
+## Makefile
+
+The Makefile provides convenient shortcuts:
+
+```sh
+make sync     # Sync Python dependencies with uv
+make run      # Start the Streamlit app only
+make start    # Start all services (KubeRay + Docker/Podman Compose)
+make stop     # Stop all services
+make status   # Check cluster status
+make job SCRIPT=hello_ray_job.py  # Submit a Ray job
+```
 
 ---
 
@@ -453,62 +362,12 @@ MIT License. See [LICENSE](LICENSE) for details.
 
 ---
 
-## Helper Scripts
-
-### scripts/init.sh
-
-The `scripts/init.sh` script automates the startup of all services:
-- Checks for prerequisites (Docker, Ray, Streamlit)
-- Starts MinIO, Prometheus, and Grafana using Docker Compose
-- Starts Ray as a head node with the client server and metrics export
-- Automatically imports Ray's default Grafana dashboards
-- Starts the Streamlit application
-- Provides status checks and URLs for each service
-- Supports `--kuberay` flag for KubeRay mode
-
-Usage:
-```sh
-scripts/init.sh           # Local Ray setup
-scripts/init.sh --kuberay # KubeRay setup
-```
-
-### scripts/stop.sh
-
-The `scripts/stop.sh` script gracefully shuts down all services:
-- Stops the Streamlit application
-- Stops the Ray cluster
-- Stops MinIO Docker containers
-- Supports `--kuberay` flag for KubeRay cleanup
-
-Usage:
-```sh
-scripts/stop.sh           # Stop local Ray setup
-scripts/stop.sh --kuberay # Stop KubeRay setup
-```
-
-### Makefile
-
-The Makefile provides convenient shortcuts:
-
-**Local Ray Setup:**
-```sh
-make run           # Start the Streamlit app only
-make start         # Start all services (calls init.sh)
-make stop          # Stop all services (calls stop.sh)
-make setup-metrics # Manually re-import Ray dashboards to Grafana
-```
-
-**KubeRay Setup:**
-```sh
-make kuberay-start   # Start KubeRay cluster
-make kuberay-status  # Check KubeRay cluster status
-make kuberay-stop    # Stop KubeRay cluster
-```
-
----
-
 ## Credits
 
 - [Ray](https://ray.io/) for distributed ML computation.
+- [KubeRay](https://docs.ray.io/en/latest/cluster/kubernetes/index.html) for Kubernetes-native Ray deployment.
 - [Streamlit](https://streamlit.io/) for interactive dashboarding.
 - [MinIO](https://min.io/) for S3-compatible object storage.
+- [Prometheus](https://prometheus.io/) for metrics collection.
+- [Grafana](https://grafana.com/) for metrics visualization.
+- [uv](https://docs.astral.sh/uv/) for fast Python package management.

@@ -1,0 +1,12 @@
+# Kind cluster configuration for ML Homelab
+# See: https://kind.sigs.k8s.io/docs/user/configuration/
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    # Increase the per-pod PID limit — Ray spawns ~300+ threads for the head
+    # node (dashboard, GCS, raylet, metrics, etc.) which exceeds Kind's default.
+    kubeadmConfigPatches:
+      - |
+        kind: KubeletConfiguration
+        podPidsLimit: 4096

@@ -1,14 +1,23 @@
 [project]
 name = "ml-homelab"
 version = "0.1.0"
-description = "Add your description here"
+description = "Local ML workflow orchestration with KubeRay, Streamlit, and MinIO"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.11,<3.13"
 dependencies = [
     "boto3>=1.40.48",
-    "ray[default]==2.49.2",
+    "ray[default]==2.44.1",
     "streamlit==1.45.1",
     "torch>=2.8.0",
     "torchvision>=0.23.0",
     "transformers>=4.57.0",
 ]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.0.0",
+    "pytest>=8.0.0",
+]
+
+[project.scripts]
+app = "streamlit.web.cli:main"

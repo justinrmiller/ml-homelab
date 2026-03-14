@@ -14,7 +14,7 @@
     },
     "editable": true,
     "gnetId": null,
-    "graphTooltip": 1,
+    "graphTooltip": 0,
     "iteration": 1667344411089,
     "links": [],
     "panels": [
@@ -29,14 +29,14 @@
                 "defaults": {},
                 "overrides": []
             },
+            "fill": 10,
+            "fillGradient": 0,
             "gridPos": {
                 "x": 0,
                 "y": 0,
                 "w": 8,
                 "h": 8
             },
-            "fill": 10,
-            "fillGradient": 0,
             "hiddenSeries": false,
             "id": 1,
             "legend": {
@@ -56,7 +56,7 @@
             },
             "lines": true,
             "linewidth": 1,
-            "nullPointMode": "connected",
+            "nullPointMode": "null",
             "options": {
                 "alertThreshold": true
             },
@@ -155,14 +155,14 @@
                 "defaults": {},
                 "overrides": []
             },
+            "fill": 10,
+            "fillGradient": 0,
             "gridPos": {
                 "x": 8,
                 "y": 0,
                 "w": 8,
                 "h": 8
             },
-            "fill": 10,
-            "fillGradient": 0,
             "hiddenSeries": false,
             "id": 2,
             "legend": {
@@ -182,7 +182,7 @@
             },
             "lines": true,
             "linewidth": 1,
-            "nullPointMode": "connected",
+            "nullPointMode": "null",
             "options": {
                 "alertThreshold": true
             },
@@ -281,14 +281,14 @@
                 "defaults": {},
                 "overrides": []
             },
+            "fill": 10,
+            "fillGradient": 0,
             "gridPos": {
                 "x": 16,
                 "y": 0,
                 "w": 8,
                 "h": 8
             },
-            "fill": 10,
-            "fillGradient": 0,
             "hiddenSeries": false,
             "id": 3,
             "legend": {
@@ -308,7 +308,7 @@
             },
             "lines": true,
             "linewidth": 1,
-            "nullPointMode": "connected",
+            "nullPointMode": "null",
             "options": {
                 "alertThreshold": true
             },
@@ -407,14 +407,14 @@
                 "defaults": {},
                 "overrides": []
             },
+            "fill": 0,
+            "fillGradient": 0,
             "gridPos": {
                 "x": 0,
                 "y": 1,
                 "w": 8,
                 "h": 8
             },
-            "fill": 0,
-            "fillGradient": 0,
             "hiddenSeries": false,
             "id": 4,
             "legend": {
@@ -434,7 +434,7 @@
             },
             "lines": true,
             "linewidth": 1,
-            "nullPointMode": null,
+            "nullPointMode": "null",
             "options": {
                 "alertThreshold": true
             },
@@ -541,14 +541,14 @@
                 "defaults": {},
                 "overrides": []
             },
+            "fill": 0,
+            "fillGradient": 0,
             "gridPos": {
                 "x": 8,
                 "y": 1,
                 "w": 8,
                 "h": 8
             },
-            "fill": 0,
-            "fillGradient": 0,
             "hiddenSeries": false,
             "id": 5,
             "legend": {
@@ -568,7 +568,7 @@
             },
             "lines": true,
             "linewidth": 1,
-            "nullPointMode": null,
+            "nullPointMode": "null",
             "options": {
                 "alertThreshold": true
             },
@@ -675,14 +675,14 @@
                 "defaults": {},
                 "overrides": []
             },
+            "fill": 0,
+            "fillGradient": 0,
             "gridPos": {
                 "x": 16,
                 "y": 1,
                 "w": 8,
                 "h": 8
             },
-            "fill": 0,
-            "fillGradient": 0,
             "hiddenSeries": false,
             "id": 6,
             "legend": {
@@ -702,7 +702,7 @@
             },
             "lines": true,
             "linewidth": 1,
-            "nullPointMode": null,
+            "nullPointMode": "null",
             "options": {
                 "alertThreshold": true
             },
@@ -809,14 +809,14 @@
                 "defaults": {},
                 "overrides": []
             },
+            "fill": 0,
+            "fillGradient": 0,
             "gridPos": {
                 "x": 0,
                 "y": 2,
                 "w": 12,
                 "h": 8
             },
-            "fill": 0,
-            "fillGradient": 0,
             "hiddenSeries": false,
             "id": 7,
             "legend": {
@@ -836,7 +836,7 @@
             },
             "lines": true,
             "linewidth": 1,
-            "nullPointMode": null,
+            "nullPointMode": "null",
             "options": {
                 "alertThreshold": true
             },
@@ -935,14 +935,14 @@
                 "defaults": {},
                 "overrides": []
             },
+            "fill": 0,
+            "fillGradient": 0,
             "gridPos": {
                 "x": 12,
                 "y": 2,
                 "w": 12,
                 "h": 8
             },
-            "fill": 0,
-            "fillGradient": 0,
             "hiddenSeries": false,
             "id": 8,
             "legend": {
@@ -962,7 +962,7 @@
             },
             "lines": true,
             "linewidth": 1,
-            "nullPointMode": null,
+            "nullPointMode": "null",
             "options": {
                 "alertThreshold": true
             },
@@ -1061,14 +1061,14 @@
                 "defaults": {},
                 "overrides": []
             },
+            "fill": 0,
+            "fillGradient": 0,
             "gridPos": {
                 "x": 0,
                 "y": 3,
                 "w": 8,
                 "h": 8
             },
-            "fill": 0,
-            "fillGradient": 0,
             "hiddenSeries": false,
             "id": 9,
             "legend": {
@@ -1088,7 +1088,7 @@
             },
             "lines": true,
             "linewidth": 1,
-            "nullPointMode": null,
+            "nullPointMode": "null",
             "options": {
                 "alertThreshold": true
             },
@@ -1187,14 +1187,14 @@
                 "defaults": {},
                 "overrides": []
             },
+            "fill": 0,
+            "fillGradient": 0,
             "gridPos": {
                 "x": 8,
                 "y": 3,
                 "w": 8,
                 "h": 8
             },
-            "fill": 0,
-            "fillGradient": 0,
             "hiddenSeries": false,
             "id": 10,
             "legend": {
@@ -1214,7 +1214,7 @@
             },
             "lines": true,
             "linewidth": 1,
-            "nullPointMode": null,
+            "nullPointMode": "null",
             "options": {
                 "alertThreshold": true
             },
@@ -1313,14 +1313,14 @@
                 "defaults": {},
                 "overrides": []
             },
+            "fill": 0,
+            "fillGradient": 0,
             "gridPos": {
                 "x": 16,
                 "y": 3,
                 "w": 8,
                 "h": 8
             },
-            "fill": 0,
-            "fillGradient": 0,
             "hiddenSeries": false,
             "id": 11,
             "legend": {
@@ -1340,7 +1340,7 @@
             },
             "lines": true,
             "linewidth": 1,
-            "nullPointMode": null,
+            "nullPointMode": "null",
             "options": {
                 "alertThreshold": true
             },
@@ -1434,19 +1434,19 @@
             "dashLength": 10,
             "dashes": false,
             "datasource": "${datasource}",
-            "description": "P99 latency of multiplexed model load per replica.",
+            "description": "P99 latency of mutliplexed model load per replica.",
             "fieldConfig": {
                 "defaults": {},
                 "overrides": []
             },
+            "fill": 0,
+            "fillGradient": 0,
             "gridPos": {
                 "x": 0,
                 "y": 4,
                 "w": 8,
                 "h": 8
             },
-            "fill": 0,
-            "fillGradient": 0,
             "hiddenSeries": false,
             "id": 12,
             "legend": {
@@ -1466,7 +1466,7 @@
             },
             "lines": true,
             "linewidth": 1,
-            "nullPointMode": null,
+            "nullPointMode": "null",
             "options": {
                 "alertThreshold": true
             },
@@ -1560,19 +1560,19 @@
             "dashLength": 10,
             "dashes": false,
             "datasource": "${datasource}",
-            "description": "P99 latency of multiplexed model unload per replica.",
+            "description": "P99 latency of mutliplexed model unload per replica.",
             "fieldConfig": {
                 "defaults": {},
                 "overrides": []
             },
+            "fill": 0,
+            "fillGradient": 0,
             "gridPos": {
                 "x": 8,
                 "y": 4,
                 "w": 8,
                 "h": 8
             },
-            "fill": 0,
-            "fillGradient": 0,
             "hiddenSeries": false,
             "id": 13,
             "legend": {
@@ -1592,7 +1592,7 @@
             },
             "lines": true,
             "linewidth": 1,
-            "nullPointMode": null,
+            "nullPointMode": "null",
             "options": {
                 "alertThreshold": true
             },
@@ -1691,14 +1691,14 @@
                 "defaults": {},
                 "overrides": []
             },
+            "fill": 10,
+            "fillGradient": 0,
             "gridPos": {
                 "x": 16,
                 "y": 4,
                 "w": 8,
                 "h": 8
             },
-            "fill": 10,
-            "fillGradient": 0,
             "hiddenSeries": false,
             "id": 14,
             "legend": {
@@ -1718,7 +1718,7 @@
             },
             "lines": true,
             "linewidth": 1,
-            "nullPointMode": null,
+            "nullPointMode": "null",
             "options": {
                 "alertThreshold": true
             },
@@ -1817,14 +1817,14 @@
                 "defaults": {},
                 "overrides": []
             },
+            "fill": 10,
+            "fillGradient": 0,
             "gridPos": {
                 "x": 0,
                 "y": 5,
                 "w": 8,
                 "h": 8
             },
-            "fill": 10,
-            "fillGradient": 0,
             "hiddenSeries": false,
             "id": 15,
             "legend": {
@@ -1844,7 +1844,7 @@
             },
             "lines": true,
             "linewidth": 1,
-            "nullPointMode": "connected",
+            "nullPointMode": "null",
             "options": {
                 "alertThreshold": true
             },
@@ -1937,7 +1937,7 @@
     "schemaVersion": 27,
     "style": "dark",
     "tags": [
-        "rayVersion:2.49.2"
+        "rayVersion:2.44.1"
     ],
     "templating": {
         "list": [
@@ -1982,7 +1982,7 @@
                     "query": "label_values(ray_serve_deployment_replica_healthy{}, application)",
                     "refId": "Prometheus-Instance-Variable-Query"
                 },
-                "refresh": 1,
+                "refresh": 2,
                 "regex": "",
                 "skipUrlSync": false,
                 "sort": 0,
@@ -2017,7 +2017,7 @@
                     "query": "label_values(ray_serve_deployment_replica_healthy{application=~\"$Application\",}, deployment)",
                     "refId": "Prometheus-Instance-Variable-Query"
                 },
-                "refresh": 1,
+                "refresh": 2,
                 "regex": "",
                 "skipUrlSync": false,
                 "sort": 0,
@@ -2052,7 +2052,7 @@
                     "query": "label_values(ray_serve_deployment_replica_healthy{application=~\"$Application\",deployment=~\"$Deployment\",}, replica)",
                     "refId": "Prometheus-Instance-Variable-Query"
                 },
-                "refresh": 1,
+                "refresh": 2,
                 "regex": "",
                 "skipUrlSync": false,
                 "sort": 0,
@@ -2087,7 +2087,7 @@
                     "query": "label_values(ray_serve_deployment_request_counter{deployment=~\"$Deployment\",}, route)",
                     "refId": "Prometheus-Instance-Variable-Query"
                 },
-                "refresh": 1,
+                "refresh": 2,
                 "regex": "",
                 "skipUrlSync": false,
                 "sort": 0,
@@ -2106,7 +2106,7 @@
                 "description": "Filter queries to specific Ray clusters for KubeRay. When ingesting metrics across multiple ray clusters, the ray_io_cluster label should be set per cluster. For KubeRay users, this is done automaticaly with Prometheus PodMonitor.",
                 "error": null,
                 "hide": 0,
-                "includeAll": true,
+                "includeAll": false,
                 "label": null,
                 "multi": false,
                 "name": "Cluster",
@@ -2115,7 +2115,7 @@
                     "query": "label_values(ray_node_network_receive_speed{}, ray_io_cluster)",
                     "refId": "StandardVariableQuery"
                 },
-                "refresh": 1,
+                "refresh": 2,
                 "regex": "",
                 "skipUrlSync": false,
                 "sort": 2,
