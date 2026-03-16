@@ -20,6 +20,11 @@ stop:
 status:
 	scripts/kuberay-status.sh
 
-# Submit a Ray job (usage: make job SCRIPT=hello_ray_job.py)
+# Submit a Ray job
+# Usage:
+#   make job SCRIPT=hello_ray_job.py
+#   make job SCRIPT=resnet_inference/inference.py RUNTIME_ENV=resnet_inference/runtime_env.yaml
+RUNTIME_ENV ?=
+_RUNTIME_ENV_FLAG = $(if $(RUNTIME_ENV),--runtime-env $(RUNTIME_ENV),)
 job:
-	uv run ray job submit --address http://localhost:8265 -- python $(SCRIPT)
+	uv run ray job submit --address http://localhost:8265 --working-dir . $(_RUNTIME_ENV_FLAG) -- python $(SCRIPT)

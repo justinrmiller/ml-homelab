@@ -1,0 +1,5 @@
+pip:
+  - torch
+  - torchvision
+  - Pillow
+  - numpy

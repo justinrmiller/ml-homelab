@@ -8,17 +8,23 @@ A local development environment for orchestrating, training, and visualizing mac
 
 ```
 .
-├── data/                        # Data storage for services
+├── data/                        # Data storage for services (auto-created)
 │   ├── minio/                   # MinIO S3-compatible storage
-│   │   ├── app-bucket/          # General application bucket
-│   │   └── ray-bucket/          # Ray-specific bucket
 │   ├── prometheus/              # Prometheus time-series data
 │   └── grafana/                 # Grafana configuration data
 ├── docs/                        # Documentation
 │   └── kuberay-setup.md         # KubeRay setup and usage guide
 ├── config/                      # Configuration files
-│   ├── prometheus.yml           # Prometheus configuration
-│   └── grafana/                 # Grafana provisioning and dashboards
+│   ├── prometheus.yml           # Prometheus scrape configuration
+│   └── grafana/                 # Grafana provisioning
+│       └── provisioning/
+│           ├── dashboards/
+│           │   ├── ray-dashboards.yml
+│           │   └── json/        # Ray 2.54.0 Grafana dashboards (6 dashboards)
+│           └── datasources/
+│               └── prometheus.yml
+├── helm/                        # Helm chart values
+│   └── ray-cluster-values.yaml  # KubeRay cluster Helm values
 ├── scripts/                     # Shell scripts for cluster management
 │   ├── common.sh                # Shared utilities and runtime detection
 │   ├── kuberay-init.sh          # KubeRay cluster initialization
@@ -29,12 +35,15 @@ A local development environment for orchestrating, training, and visualizing mac
 │   └── jobs/                    # ML jobs for Ray execution
 │       ├── mnist_training/      # MNIST example job
 │       │   ├── train_mnist.py   # Training script
+│       │   ├── runtime_env.yaml # Ray runtime environment (pip deps)
 │       │   └── run.sh           # Job submission script
 │       └── resnet_inference/    # ResNet example job
-│           └── inference.py     # Inference script
+│           ├── inference.py     # Inference script
+│           └── runtime_env.yaml # Ray runtime environment (pip deps)
 ├── hello_ray_job.py             # Simple Ray job example
 ├── ray_job_example.py           # Ray job submission example
 ├── docker-compose.yaml          # MinIO, Prometheus, Grafana orchestration
+├── kind-config.yaml             # Kind cluster configuration
 ├── pyproject.toml               # Python project config (managed by uv)
 ├── uv.lock                      # Locked dependencies (committed to git)
 ├── Makefile                     # Simple commands for running services
@@ -47,7 +56,7 @@ A local development environment for orchestrating, training, and visualizing mac
 
 ## Components
 
-### 1. **Ray (via KubeRay)**
+### 1. **Ray 2.54.0 (via KubeRay)**
 - **Purpose:** Distributed ML training, hyperparameter tuning, and job submission.
 - **Deployment:** Kubernetes-based via Kind cluster and KubeRay operator.
 - **Features:**
@@ -56,6 +65,7 @@ A local development environment for orchestrating, training, and visualizing mac
   - Fault tolerance and high availability
   - REST API for job submission
   - Web dashboard for monitoring jobs and clusters
+  - Runtime environment support for pip dependency management
 
 ### 2. **Streamlit**
 - **Purpose:** Interactive dashboard for cluster status and S3 browsing.
@@ -70,6 +80,7 @@ A local development environment for orchestrating, training, and visualizing mac
 ### 3. **MinIO**
 - **Purpose:** S3-compatible object storage system for local development.
 - **Configured in:** [`docker-compose.yaml`](docker-compose.yaml)
+- **Default credentials:** minioadmin/minioadmin (configurable via `.env`)
 - **Buckets:** app-bucket (public), ray-bucket
 - **Ports:**
   - MinIO Server: 9000
@@ -89,7 +100,7 @@ A local development environment for orchestrating, training, and visualizing mac
 - **Configured in:** [`docker-compose.yaml`](docker-compose.yaml)
 - **Features:**
   - Pre-configured Prometheus datasource
-  - Supports Ray's default dashboards
+  - 6 pre-built Ray 2.54.0 dashboards (Default, Data, Serve, Serve Deployment, Serve LLM, Train)
   - Customizable dashboards and alerts
 - **Port:** 3000
 - **Default credentials:** admin/admin
@@ -103,6 +114,7 @@ A local development environment for orchestrating, training, and visualizing mac
 ### Prerequisites
 
 - [Docker](https://www.docker.com/) or [Podman](https://podman.io/) (container runtime)
+  - When using Podman, `podman-compose` is preferred and will be auto-installed via `uv tool install` if not present
 - [Python](https://python.org/) 3.11+
 - [uv](https://docs.astral.sh/uv/) (Python package manager)
 
@@ -119,10 +131,11 @@ The following tools will be auto-installed via Homebrew if missing:
    cd ml-homelab
    ```
 
-2. **Configure environment variables:**
+2. **Configure environment variables (optional):**
    ```sh
    cp .env.example .env
    # Edit .env to customize credentials and ports
+   # Note: .env is auto-created from .env.example on first `make start` if missing
    ```
 
 3. **Install dependencies:**
@@ -152,7 +165,7 @@ The following tools will be auto-installed via Homebrew if missing:
 6. **Access services:**
    - **Ray Dashboard:** http://localhost:8265/
    - **Streamlit Dashboard:** http://localhost:8501/
-   - **MinIO Console:** http://localhost:9001/ (credentials from .env)
+   - **MinIO Console:** http://localhost:9001/ (default: minioadmin/minioadmin)
    - **Prometheus:** http://localhost:9090/
    - **Grafana:** http://localhost:3000/ (default: admin/admin)
 
@@ -171,37 +184,36 @@ For detailed KubeRay setup instructions, see [docs/kuberay-setup.md](docs/kubera
 
 - Submit a job to the Ray cluster:
   ```sh
-  uv run ray job submit --address http://localhost:8265 -- python hello_ray_job.py
-
-  # Or use the Makefile shortcut
   make job SCRIPT=hello_ray_job.py
   ```
 
-### Ray Job Submission
+### Ray Job with Runtime Environment
 
-- Submit a job and monitor its progress:
+- Jobs that need additional pip dependencies use `runtime_env.yaml` files:
+  ```sh
+  # ResNet inference (installs torch, torchvision, Pillow, numpy on the cluster)
+  make job SCRIPT=streamlit_app/jobs/resnet_inference/inference.py \
+       RUNTIME_ENV=streamlit_app/jobs/resnet_inference/runtime_env.yaml
+
+  # MNIST training (installs torch, torchvision, filelock on the cluster)
+  make job SCRIPT=streamlit_app/jobs/mnist_training/train_mnist.py \
+       RUNTIME_ENV=streamlit_app/jobs/mnist_training/runtime_env.yaml
+  ```
+
+### Ray Job Submission (Programmatic)
+
+- Submit a job and monitor its progress via Python API:
   ```sh
   uv run python ray_job_example.py
   ```
 
-### Ray MNIST Training
+### Streamlit UI
 
-- Run distributed MNIST training with Ray Tune:
+- All jobs can also be submitted and monitored through the Streamlit dashboard:
   ```sh
-  cd streamlit_app/jobs/mnist_training
-  ./run.sh
+  make run
   ```
-
-- Or submit the job through the Streamlit UI using the Training tab.
-
-### ResNet Inference
-
-- Run inference using a pre-trained ResNet model:
-  ```sh
-  uv run python streamlit_app/jobs/resnet_inference/inference.py
-  ```
-
-- Or submit the job through the Streamlit UI using the Inference tab.
+  Use the Training and Inference tabs to submit jobs with automatic runtime environment handling.
 
 ### Architecture
 
@@ -274,7 +286,7 @@ Prometheus scrapes metrics from Ray every 15 seconds and stores them for histori
 #### Grafana
 Grafana provides visual dashboards for Ray metrics at http://localhost:3000/ (admin/admin). Features include:
 - Pre-configured Prometheus datasource
-- Ray's default dashboards
+- 6 pre-built Ray 2.54.0 dashboards: Default, Data, Serve, Serve Deployment, Serve LLM, Train
 - Customizable panels and alerts
 
 ### Streamlit Dashboard
@@ -295,7 +307,7 @@ You can manually test your ML workflows through the Streamlit interface or by ru
 ### Ray Job Testing
 
 ```sh
-uv run ray job submit --address http://localhost:8265 -- python hello_ray_job.py
+make job SCRIPT=hello_ray_job.py
 ```
 
 ### S3 Connection Testing
@@ -308,8 +320,8 @@ import boto3
 s3 = boto3.client(
     "s3",
     endpoint_url="http://localhost:9000",
-    aws_access_key_id="test-key",
-    aws_secret_access_key="test-secret",
+    aws_access_key_id="minioadmin",
+    aws_secret_access_key="minioadmin",
 )
 
 # List buckets
@@ -323,6 +335,7 @@ print([b["Name"] for b in buckets["Buckets"]])
 
 - **Add new ML experiments:**
   - Place scripts in [`streamlit_app/jobs/`](streamlit_app/jobs/)
+  - Add a `runtime_env.yaml` listing pip dependencies needed on the Ray cluster
   - Follow the pattern in existing jobs (e.g., mnist_training, resnet_inference)
   - Update the Streamlit app to include new job types
 
@@ -337,7 +350,7 @@ print([b["Name"] for b in buckets["Buckets"]])
 
 - **Configure Ray:**
   - Adjust parameters in the `.env` file
-  - Modify Helm values in `scripts/kuberay-init.sh`
+  - Modify Helm values in [`helm/ray-cluster-values.yaml`](helm/ray-cluster-values.yaml)
 
 ---
 
@@ -351,7 +364,8 @@ make run      # Start the Streamlit app only
 make start    # Start all services (KubeRay + Docker/Podman Compose)
 make stop     # Stop all services
 make status   # Check cluster status
-make job SCRIPT=hello_ray_job.py  # Submit a Ray job
+make job SCRIPT=hello_ray_job.py                           # Submit a simple Ray job
+make job SCRIPT=path/to/job.py RUNTIME_ENV=path/to/env.yaml  # Submit with pip deps
 ```
 
 ---

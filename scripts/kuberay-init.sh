@@ -140,10 +140,56 @@ echo -e "${YELLOW}Step 4/8: Starting services with ${COMPOSE_CMD}...${NC}"
 mkdir -p "$PROJECT_ROOT/data/prometheus" "$PROJECT_ROOT/data/grafana" "$PROJECT_ROOT/data/minio"
 chmod 777 "$PROJECT_ROOT/data/prometheus" "$PROJECT_ROOT/data/grafana"
 
+# Ensure .env exists — compose fails without it due to env_file directives
+if [ ! -f "$PROJECT_ROOT/.env" ]; then
+  if [ -f "$PROJECT_ROOT/.env.example" ]; then
+    echo -e "Creating .env from .env.example..."
+    cp "$PROJECT_ROOT/.env.example" "$PROJECT_ROOT/.env"
+  else
+    echo -e "Creating minimal .env with defaults..."
+    cat > "$PROJECT_ROOT/.env" <<'ENVEOF'
+MINIO_ROOT_USER=minioadmin
+MINIO_ROOT_PASSWORD=minioadmin
+ENVEOF
+  fi
+fi
+
 # Stop any brew-managed Grafana/Prometheus that would conflict
 if command_exists brew; then
   brew services stop grafana 2>/dev/null || true
   brew services stop prometheus 2>/dev/null || true
+fi
+
+# When Podman is the runtime, compose tools (podman compose, podman-compose,
+# or docker-compose) may read ~/.docker/config.json which references
+# "docker-credential-desktop" — a Docker Desktop helper that doesn't exist
+# under Podman. This causes a hard failure even for public images.
+# Work around it by providing a clean config without the credsStore entry.
+if [ "$CONTAINER_RT" = "podman" ]; then
+  _docker_cfg="${HOME}/.docker/config.json"
+  if [ -f "$_docker_cfg" ] && grep -q '"credsStore"' "$_docker_cfg"; then
+    # Extract the credential helper name (e.g. "desktop")
+    _cred_helper=$(python3 -c "import json; print(json.load(open('$_docker_cfg')).get('credsStore',''))" 2>/dev/null)
+    if [ -n "$_cred_helper" ] && ! command_exists "docker-credential-${_cred_helper}"; then
+      _tmpconf=$(mktemp -d)
+      python3 -c "
+import json
+cfg = json.load(open('$_docker_cfg'))
+cfg.pop('credsStore', None)
+json.dump(cfg, open('${_tmpconf}/config.json', 'w'), indent=2)
+"
+      export DOCKER_CONFIG="$_tmpconf"
+      echo -e "⚠️  Overriding DOCKER_CONFIG to avoid missing docker-credential-${_cred_helper}"
+    fi
+  fi
+fi
+
+# podman-compose creates a pod per project. If a previous run left a stale
+# pod behind (e.g. containers removed but pod still exists), compose fails
+# with "unable to find pod". Clean up any leftover pod first.
+if [ "$CONTAINER_RT" = "podman" ] && [[ "$COMPOSE_CMD" == "podman-compose" ]]; then
+  _pod_name="pod_$(basename "$PROJECT_ROOT")"
+  podman pod rm -f "$_pod_name" 2>/dev/null || true
 fi
 
 (cd "$PROJECT_ROOT" && $COMPOSE_CMD up -d)
@@ -155,9 +201,27 @@ echo -e "Connecting Prometheus and Grafana to Kind network..."
 $CONTAINER_RT network connect kind prometheus_server 2>/dev/null || true
 $CONTAINER_RT network connect kind grafana_server 2>/dev/null || true
 
-# Get their IPs on the Kind network
-PROMETHEUS_K8S_IP=$($CONTAINER_RT inspect prometheus_server --format '{{range $k,$v := .NetworkSettings.Networks}}{{if eq $k "kind"}}{{$v.IPAddress}}{{end}}{{end}}')
-GRAFANA_K8S_IP=$($CONTAINER_RT inspect grafana_server --format '{{range $k,$v := .NetworkSettings.Networks}}{{if eq $k "kind"}}{{$v.IPAddress}}{{end}}{{end}}')
+# Get their IPs on the Kind network.
+# Docker uses .NetworkSettings.Networks; Podman may use the same path or
+# expose it under a flat list. Try the Docker format first, fall back to
+# JSON parsing with jq/python for Podman compatibility.
+_get_container_ip() {
+  local ctr="$1" net="$2"
+  # Attempt 1: Go-template (works on Docker and most Podman versions)
+  local ip
+  ip=$($CONTAINER_RT inspect "$ctr" --format "{{range \$k,\$v := .NetworkSettings.Networks}}{{if eq \$k \"$net\"}}{{\$v.IPAddress}}{{end}}{{end}}" 2>/dev/null)
+  if [ -n "$ip" ]; then echo "$ip"; return; fi
+  # Attempt 2: JSON fallback via python (Podman inspect output may differ)
+  ip=$($CONTAINER_RT inspect "$ctr" 2>/dev/null | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+obj = data[0] if isinstance(data, list) else data
+nets = obj.get('NetworkSettings', {}).get('Networks', {})
+print(nets.get('$net', {}).get('IPAddress', ''))" 2>/dev/null)
+  echo "$ip"
+}
+PROMETHEUS_K8S_IP=$(_get_container_ip prometheus_server kind)
+GRAFANA_K8S_IP=$(_get_container_ip grafana_server kind)
 
 if [ -z "$PROMETHEUS_K8S_IP" ] || [ -z "$GRAFANA_K8S_IP" ]; then
   echo -e "⚠️  Could not get container IPs on Kind network. Ray Dashboard metrics may not work."
@@ -185,9 +249,9 @@ else
 fi
 
 if [ "$ARCH" = "aarch64" ]; then
-  RAY_IMAGE_TAG="2.44.1-py311-aarch64"
+  RAY_IMAGE_TAG="2.54.0-py311-aarch64"
 else
-  RAY_IMAGE_TAG="2.44.1-py311"
+  RAY_IMAGE_TAG="2.54.0-py311"
 fi
 echo -e "Deploying Ray cluster for ${ARCH} architecture (image: ${RAY_IMAGE_TAG})..."
 

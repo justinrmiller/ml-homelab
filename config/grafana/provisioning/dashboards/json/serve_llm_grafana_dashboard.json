@@ -24,23 +24,23 @@
             "dashLength": 10,
             "dashes": false,
             "datasource": "${datasource}",
-            "description": "Number of replicas per deployment. Ignores \"Route\" variable.",
+            "description": "",
             "fieldConfig": {
                 "defaults": {
-                    "unit": "replicas"
+                    "unit": "short"
                 },
                 "overrides": []
             },
             "gridPos": {
                 "x": 0,
                 "y": 0,
-                "w": 8,
+                "w": 12,
                 "h": 8
             },
-            "fill": 10,
+            "fill": 1,
             "fillGradient": 0,
             "hiddenSeries": false,
-            "id": 1,
+            "id": 29,
             "legend": {
                 "alignAsTable": true,
                 "avg": true,
@@ -57,8 +57,8 @@
                 "values": true
             },
             "lines": true,
-            "linewidth": 1,
-            "nullPointMode": "connected",
+            "linewidth": 2,
+            "nullPointMode": null,
             "options": {
                 "alertThreshold": true
             },
@@ -91,23 +91,31 @@
                 }
             ],
             "spaceLength": 10,
-            "stack": true,
+            "stack": false,
             "steppedLine": false,
             "targets": [
                 {
                     "exemplar": true,
-                    "expr": "sum(ray_serve_deployment_replica_healthy{application=~\"$Application\",deployment=~\"$Deployment\",replica=~\"$Replica\",ray_io_cluster=~\"$Cluster\"}) by (application, deployment)",
+                    "expr": "sum by (model_name, WorkerId, replica) (rate(ray_serve_deployment_request_counter_total{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", , deployment=~\"$deployment\"}[$interval]))",
                     "interval": "",
-                    "legendFormat": "{{application}}#{{deployment}}#{{replica}}",
+                    "legendFormat": "replica {{replica}}, worker {{WorkerId}}",
                     "queryType": "randomWalk",
                     "refId": "A"
+                },
+                {
+                    "exemplar": true,
+                    "expr": "sum(rate(ray_serve_deployment_request_counter_total{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", , deployment=~\"$deployment\"}[$interval]))",
+                    "interval": "",
+                    "legendFormat": "Total QPS",
+                    "queryType": "randomWalk",
+                    "refId": "B"
                 }
             ],
             "thresholds": [],
             "timeFrom": null,
             "timeRegions": [],
             "timeShift": null,
-            "title": "Replicas per deployment",
+            "title": "QPS per vLLM worker",
             "tooltip": {
                 "shared": true,
                 "sort": 0,
@@ -124,7 +132,7 @@
             "yaxes": [
                 {
                     "$$hashKey": "object:628",
-                    "format": "replicas",
+                    "format": "short",
                     "label": "",
                     "logBase": 1,
                     "max": null,
@@ -152,20 +160,20 @@
             "dashLength": 10,
             "dashes": false,
             "datasource": "${datasource}",
-            "description": "QPS for each replica.",
+            "description": "",
             "fieldConfig": {
                 "defaults": {
-                    "unit": "qps"
+                    "unit": "s"
                 },
                 "overrides": []
             },
             "gridPos": {
-                "x": 8,
+                "x": 12,
                 "y": 0,
-                "w": 8,
+                "w": 12,
                 "h": 8
             },
-            "fill": 10,
+            "fill": 1,
             "fillGradient": 0,
             "hiddenSeries": false,
             "id": 2,
@@ -185,263 +193,7 @@
                 "values": true
             },
             "lines": true,
-            "linewidth": 1,
-            "nullPointMode": "connected",
-            "options": {
-                "alertThreshold": true
-            },
-            "percentage": false,
-            "pluginVersion": "7.5.17",
-            "pointradius": 2,
-            "points": false,
-            "renderer": "flot",
-            "seriesOverrides": [
-                {
-                    "$$hashKey": "object:2987",
-                    "alias": "MAX",
-                    "dashes": true,
-                    "color": "#1F60C4",
-                    "fill": 0,
-                    "stack": false
-                },
-                {
-                    "$$hashKey": "object:78",
-                    "alias": "/FINISHED|FAILED|DEAD|REMOVED|Failed Nodes:/",
-                    "hiddenSeries": true
-                },
-                {
-                    "$$hashKey": "object:2987",
-                    "alias": "MAX + PENDING",
-                    "dashes": true,
-                    "color": "#777777",
-                    "fill": 0,
-                    "stack": false
-                }
-            ],
-            "spaceLength": 10,
-            "stack": true,
-            "steppedLine": false,
-            "targets": [
-                {
-                    "exemplar": true,
-                    "expr": "sum(rate(ray_serve_deployment_request_counter_total{route=~\"$Route\",route!~\"/-/.*\",application=~\"$Application\",deployment=~\"$Deployment\",replica=~\"$Replica\",ray_io_cluster=~\"$Cluster\"}[5m])) by (application, deployment, replica)",
-                    "interval": "",
-                    "legendFormat": "{{application}}#{{deployment}}#{{replica}}",
-                    "queryType": "randomWalk",
-                    "refId": "A"
-                }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeRegions": [],
-            "timeShift": null,
-            "title": "QPS per replica",
-            "tooltip": {
-                "shared": true,
-                "sort": 0,
-                "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-                "buckets": null,
-                "mode": "time",
-                "name": null,
-                "show": true,
-                "values": []
-            },
-            "yaxes": [
-                {
-                    "$$hashKey": "object:628",
-                    "format": "qps",
-                    "label": "",
-                    "logBase": 1,
-                    "max": null,
-                    "min": "0",
-                    "show": true
-                },
-                {
-                    "$$hashKey": "object:629",
-                    "format": "short",
-                    "label": null,
-                    "logBase": 1,
-                    "max": null,
-                    "min": null,
-                    "show": true
-                }
-            ],
-            "yaxis": {
-                "align": false,
-                "alignLevel": null
-            }
-        },
-        {
-            "aliasColors": {},
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "${datasource}",
-            "description": "Error QPS for each replica.",
-            "fieldConfig": {
-                "defaults": {
-                    "unit": "qps"
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "x": 16,
-                "y": 0,
-                "w": 8,
-                "h": 8
-            },
-            "fill": 10,
-            "fillGradient": 0,
-            "hiddenSeries": false,
-            "id": 3,
-            "legend": {
-                "alignAsTable": true,
-                "avg": true,
-                "current": true,
-                "hideEmpty": false,
-                "hideZero": true,
-                "max": true,
-                "min": false,
-                "rightSide": false,
-                "show": true,
-                "sort": "current",
-                "sortDesc": true,
-                "total": false,
-                "values": true
-            },
-            "lines": true,
-            "linewidth": 1,
-            "nullPointMode": "connected",
-            "options": {
-                "alertThreshold": true
-            },
-            "percentage": false,
-            "pluginVersion": "7.5.17",
-            "pointradius": 2,
-            "points": false,
-            "renderer": "flot",
-            "seriesOverrides": [
-                {
-                    "$$hashKey": "object:2987",
-                    "alias": "MAX",
-                    "dashes": true,
-                    "color": "#1F60C4",
-                    "fill": 0,
-                    "stack": false
-                },
-                {
-                    "$$hashKey": "object:78",
-                    "alias": "/FINISHED|FAILED|DEAD|REMOVED|Failed Nodes:/",
-                    "hiddenSeries": true
-                },
-                {
-                    "$$hashKey": "object:2987",
-                    "alias": "MAX + PENDING",
-                    "dashes": true,
-                    "color": "#777777",
-                    "fill": 0,
-                    "stack": false
-                }
-            ],
-            "spaceLength": 10,
-            "stack": true,
-            "steppedLine": false,
-            "targets": [
-                {
-                    "exemplar": true,
-                    "expr": "sum(rate(ray_serve_deployment_error_counter_total{route=~\"$Route\",route!~\"/-/.*\",application=~\"$Application\",deployment=~\"$Deployment\",replica=~\"$Replica\",ray_io_cluster=~\"$Cluster\"}[5m])) by (application, deployment, replica)",
-                    "interval": "",
-                    "legendFormat": "{{application}}#{{deployment}}#{{replica}}",
-                    "queryType": "randomWalk",
-                    "refId": "A"
-                }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeRegions": [],
-            "timeShift": null,
-            "title": "Error QPS per replica",
-            "tooltip": {
-                "shared": true,
-                "sort": 0,
-                "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-                "buckets": null,
-                "mode": "time",
-                "name": null,
-                "show": true,
-                "values": []
-            },
-            "yaxes": [
-                {
-                    "$$hashKey": "object:628",
-                    "format": "qps",
-                    "label": "",
-                    "logBase": 1,
-                    "max": null,
-                    "min": "0",
-                    "show": true
-                },
-                {
-                    "$$hashKey": "object:629",
-                    "format": "short",
-                    "label": null,
-                    "logBase": 1,
-                    "max": null,
-                    "min": null,
-                    "show": true
-                }
-            ],
-            "yaxis": {
-                "align": false,
-                "alignLevel": null
-            }
-        },
-        {
-            "aliasColors": {},
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "${datasource}",
-            "description": "P50 latency per replica.",
-            "fieldConfig": {
-                "defaults": {
-                    "unit": "ms"
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "x": 0,
-                "y": 1,
-                "w": 8,
-                "h": 8
-            },
-            "fill": 0,
-            "fillGradient": 0,
-            "hiddenSeries": false,
-            "id": 4,
-            "legend": {
-                "alignAsTable": true,
-                "avg": true,
-                "current": true,
-                "hideEmpty": false,
-                "hideZero": true,
-                "max": true,
-                "min": false,
-                "rightSide": false,
-                "show": true,
-                "sort": "current",
-                "sortDesc": true,
-                "total": false,
-                "values": true
-            },
-            "lines": true,
-            "linewidth": 1,
+            "linewidth": 2,
             "nullPointMode": null,
             "options": {
                 "alertThreshold": true
@@ -480,26 +232,50 @@
             "targets": [
                 {
                     "exemplar": true,
-                    "expr": "histogram_quantile(0.5, sum(rate(ray_serve_deployment_processing_latency_ms_bucket{route=~\"$Route\",route!~\"/-/.*\",application=~\"$Application\",deployment=~\"$Deployment\",replica=~\"$Replica\",ray_io_cluster=~\"$Cluster\"}[5m])) by (application, deployment, replica, le))",
+                    "expr": "histogram_quantile(0.99, sum by(le, model_name, WorkerId) (rate(ray_vllm_request_time_per_output_token_seconds_bucket{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval])))",
                     "interval": "",
-                    "legendFormat": "{{application}}#{{deployment}}#{{replica}}",
+                    "legendFormat": "P99 - {{model_name}} - {{WorkerId}}",
                     "queryType": "randomWalk",
                     "refId": "A"
                 },
                 {
                     "exemplar": true,
-                    "expr": "histogram_quantile(0.5, sum(rate(ray_serve_deployment_processing_latency_ms_bucket{route=~\"$Route\",route!~\"/-/.*\",application=~\"$Application\",deployment=~\"$Deployment\",replica=~\"$Replica\",ray_io_cluster=~\"$Cluster\"}[5m])) by (le))",
+                    "expr": "histogram_quantile(0.95, sum by(le, model_name, WorkerId) (rate(ray_vllm_request_time_per_output_token_seconds_bucket{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval])))",
                     "interval": "",
-                    "legendFormat": "Total",
+                    "legendFormat": "P95 - {{model_name}} - {{WorkerId}}",
                     "queryType": "randomWalk",
                     "refId": "B"
+                },
+                {
+                    "exemplar": true,
+                    "expr": "histogram_quantile(0.9, sum by(le, model_name, WorkerId) (rate(ray_vllm_request_time_per_output_token_seconds_bucket{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval])))",
+                    "interval": "",
+                    "legendFormat": "P90 - {{model_name}} - {{WorkerId}}",
+                    "queryType": "randomWalk",
+                    "refId": "C"
+                },
+                {
+                    "exemplar": true,
+                    "expr": "histogram_quantile(0.5, sum by(le, model_name, WorkerId) (rate(ray_vllm_request_time_per_output_token_seconds_bucket{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval])))",
+                    "interval": "",
+                    "legendFormat": "P50 - {{model_name}} - {{WorkerId}}",
+                    "queryType": "randomWalk",
+                    "refId": "D"
+                },
+                {
+                    "exemplar": true,
+                    "expr": "(sum by(model_name, WorkerId) (rate(ray_vllm_request_time_per_output_token_seconds_sum{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval]))\n/\nsum by(model_name, WorkerId) (rate(ray_vllm_request_time_per_output_token_seconds_count{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval])))",
+                    "interval": "",
+                    "legendFormat": "Mean - {{model_name}} - {{WorkerId}}",
+                    "queryType": "randomWalk",
+                    "refId": "E"
                 }
             ],
             "thresholds": [],
             "timeFrom": null,
             "timeRegions": [],
             "timeShift": null,
-            "title": "P50 latency per replica",
+            "title": "vLLM: Time Per Output Token Latency",
             "tooltip": {
                 "shared": true,
                 "sort": 0,
@@ -516,7 +292,7 @@
             "yaxes": [
                 {
                     "$$hashKey": "object:628",
-                    "format": "ms",
+                    "format": "s",
                     "label": "",
                     "logBase": 1,
                     "max": null,
@@ -544,20 +320,156 @@
             "dashLength": 10,
             "dashes": false,
             "datasource": "${datasource}",
-            "description": "P90 latency per replica.",
+            "description": "Number of tokens processed per second",
             "fieldConfig": {
                 "defaults": {
-                    "unit": "ms"
+                    "unit": "tokens/s"
                 },
                 "overrides": []
             },
             "gridPos": {
-                "x": 8,
-                "y": 1,
-                "w": 8,
+                "x": 0,
+                "y": 8,
+                "w": 12,
                 "h": 8
             },
-            "fill": 0,
+            "fill": 1,
+            "fillGradient": 0,
+            "hiddenSeries": false,
+            "id": 1,
+            "legend": {
+                "alignAsTable": true,
+                "avg": true,
+                "current": true,
+                "hideEmpty": false,
+                "hideZero": true,
+                "max": true,
+                "min": false,
+                "rightSide": false,
+                "show": true,
+                "sort": "current",
+                "sortDesc": true,
+                "total": false,
+                "values": true
+            },
+            "lines": true,
+            "linewidth": 2,
+            "nullPointMode": null,
+            "options": {
+                "alertThreshold": true
+            },
+            "percentage": false,
+            "pluginVersion": "7.5.17",
+            "pointradius": 2,
+            "points": false,
+            "renderer": "flot",
+            "seriesOverrides": [
+                {
+                    "$$hashKey": "object:2987",
+                    "alias": "MAX",
+                    "dashes": true,
+                    "color": "#1F60C4",
+                    "fill": 0,
+                    "stack": false
+                },
+                {
+                    "$$hashKey": "object:78",
+                    "alias": "/FINISHED|FAILED|DEAD|REMOVED|Failed Nodes:/",
+                    "hiddenSeries": true
+                },
+                {
+                    "$$hashKey": "object:2987",
+                    "alias": "MAX + PENDING",
+                    "dashes": true,
+                    "color": "#777777",
+                    "fill": 0,
+                    "stack": false
+                }
+            ],
+            "spaceLength": 10,
+            "stack": false,
+            "steppedLine": false,
+            "targets": [
+                {
+                    "exemplar": true,
+                    "expr": "sum by (model_name, WorkerId) (rate(ray_vllm_request_prompt_tokens_sum{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval]))",
+                    "interval": "",
+                    "legendFormat": "Prompt Tokens/Sec - {{model_name}} - {{WorkerId}}",
+                    "queryType": "randomWalk",
+                    "refId": "A"
+                },
+                {
+                    "exemplar": true,
+                    "expr": "sum by (model_name, WorkerId) (rate(ray_vllm_generation_tokens_total{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval]))",
+                    "interval": "",
+                    "legendFormat": "Generation Tokens/Sec - {{model_name}} - {{WorkerId}}",
+                    "queryType": "randomWalk",
+                    "refId": "B"
+                }
+            ],
+            "thresholds": [],
+            "timeFrom": null,
+            "timeRegions": [],
+            "timeShift": null,
+            "title": "vLLM: Token Throughput",
+            "tooltip": {
+                "shared": true,
+                "sort": 0,
+                "value_type": "individual"
+            },
+            "type": "graph",
+            "xaxis": {
+                "buckets": null,
+                "mode": "time",
+                "name": null,
+                "show": true,
+                "values": []
+            },
+            "yaxes": [
+                {
+                    "$$hashKey": "object:628",
+                    "format": "tokens/s",
+                    "label": "",
+                    "logBase": 1,
+                    "max": null,
+                    "min": "0",
+                    "show": true
+                },
+                {
+                    "$$hashKey": "object:629",
+                    "format": "short",
+                    "label": null,
+                    "logBase": 1,
+                    "max": null,
+                    "min": null,
+                    "show": true
+                }
+            ],
+            "yaxis": {
+                "align": false,
+                "alignLevel": null
+            }
+        },
+        {
+            "aliasColors": {},
+            "bars": false,
+            "dashLength": 10,
+            "dashes": false,
+            "datasource": "${datasource}",
+            "description": "P50, P90, P95, and P99 TTFT latency",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "s"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "x": 12,
+                "y": 8,
+                "w": 12,
+                "h": 8
+            },
+            "fill": 1,
             "fillGradient": 0,
             "hiddenSeries": false,
             "id": 5,
@@ -577,6 +489,294 @@
                 "values": true
             },
             "lines": true,
+            "linewidth": 2,
+            "nullPointMode": null,
+            "options": {
+                "alertThreshold": true
+            },
+            "percentage": false,
+            "pluginVersion": "7.5.17",
+            "pointradius": 2,
+            "points": false,
+            "renderer": "flot",
+            "seriesOverrides": [
+                {
+                    "$$hashKey": "object:2987",
+                    "alias": "MAX",
+                    "dashes": true,
+                    "color": "#1F60C4",
+                    "fill": 0,
+                    "stack": false
+                },
+                {
+                    "$$hashKey": "object:78",
+                    "alias": "/FINISHED|FAILED|DEAD|REMOVED|Failed Nodes:/",
+                    "hiddenSeries": true
+                },
+                {
+                    "$$hashKey": "object:2987",
+                    "alias": "MAX + PENDING",
+                    "dashes": true,
+                    "color": "#777777",
+                    "fill": 0,
+                    "stack": false
+                }
+            ],
+            "spaceLength": 10,
+            "stack": false,
+            "steppedLine": false,
+            "targets": [
+                {
+                    "exemplar": true,
+                    "expr": "(sum by(model_name, WorkerId) (rate(ray_vllm_time_to_first_token_seconds_sum{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval]))\n/\nsum by(model_name, WorkerId) (rate(ray_vllm_time_to_first_token_seconds_count{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval])))",
+                    "interval": "",
+                    "legendFormat": "Average - {{model_name}} - {{WorkerId}}",
+                    "queryType": "randomWalk",
+                    "refId": "A"
+                },
+                {
+                    "exemplar": true,
+                    "expr": "histogram_quantile(0.5, sum by(le, model_name, WorkerId)(rate(ray_vllm_time_to_first_token_seconds_bucket{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval])))",
+                    "interval": "",
+                    "legendFormat": "P50 - {{model_name}} - {{WorkerId}}",
+                    "queryType": "randomWalk",
+                    "refId": "B"
+                },
+                {
+                    "exemplar": true,
+                    "expr": "histogram_quantile(0.9, sum by(le, model_name, WorkerId)(rate(ray_vllm_time_to_first_token_seconds_bucket{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval])))",
+                    "interval": "",
+                    "legendFormat": "P90 - {{model_name}} - {{WorkerId}}",
+                    "queryType": "randomWalk",
+                    "refId": "C"
+                },
+                {
+                    "exemplar": true,
+                    "expr": "histogram_quantile(0.95, sum by(le, model_name, WorkerId) (rate(ray_vllm_time_to_first_token_seconds_bucket{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval])))",
+                    "interval": "",
+                    "legendFormat": "P95 - {{model_name}} - {{WorkerId}}",
+                    "queryType": "randomWalk",
+                    "refId": "D"
+                },
+                {
+                    "exemplar": true,
+                    "expr": "histogram_quantile(0.99, sum by(le, model_name, WorkerId)(rate(ray_vllm_time_to_first_token_seconds_bucket{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval])))",
+                    "interval": "",
+                    "legendFormat": "P99 - {{model_name}} - {{WorkerId}}",
+                    "queryType": "randomWalk",
+                    "refId": "E"
+                }
+            ],
+            "thresholds": [],
+            "timeFrom": null,
+            "timeRegions": [],
+            "timeShift": null,
+            "title": "vLLM: Time To First Token Latency",
+            "tooltip": {
+                "shared": true,
+                "sort": 0,
+                "value_type": "individual"
+            },
+            "type": "graph",
+            "xaxis": {
+                "buckets": null,
+                "mode": "time",
+                "name": null,
+                "show": true,
+                "values": []
+            },
+            "yaxes": [
+                {
+                    "$$hashKey": "object:628",
+                    "format": "s",
+                    "label": "",
+                    "logBase": 1,
+                    "max": null,
+                    "min": "0",
+                    "show": true
+                },
+                {
+                    "$$hashKey": "object:629",
+                    "format": "short",
+                    "label": null,
+                    "logBase": 1,
+                    "max": null,
+                    "min": null,
+                    "show": true
+                }
+            ],
+            "yaxis": {
+                "align": false,
+                "alignLevel": null
+            }
+        },
+        {
+            "aliasColors": {},
+            "bars": false,
+            "dashLength": 10,
+            "dashes": false,
+            "datasource": "${datasource}",
+            "description": "Percentage of used cache blocks by vLLM.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "percentunit"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "x": 0,
+                "y": 16,
+                "w": 12,
+                "h": 8
+            },
+            "fill": 1,
+            "fillGradient": 0,
+            "hiddenSeries": false,
+            "id": 3,
+            "legend": {
+                "alignAsTable": true,
+                "avg": true,
+                "current": true,
+                "hideEmpty": false,
+                "hideZero": true,
+                "max": true,
+                "min": false,
+                "rightSide": false,
+                "show": true,
+                "sort": "current",
+                "sortDesc": true,
+                "total": false,
+                "values": true
+            },
+            "lines": true,
+            "linewidth": 2,
+            "nullPointMode": null,
+            "options": {
+                "alertThreshold": true
+            },
+            "percentage": false,
+            "pluginVersion": "7.5.17",
+            "pointradius": 2,
+            "points": false,
+            "renderer": "flot",
+            "seriesOverrides": [
+                {
+                    "$$hashKey": "object:2987",
+                    "alias": "MAX",
+                    "dashes": true,
+                    "color": "#1F60C4",
+                    "fill": 0,
+                    "stack": false
+                },
+                {
+                    "$$hashKey": "object:78",
+                    "alias": "/FINISHED|FAILED|DEAD|REMOVED|Failed Nodes:/",
+                    "hiddenSeries": true
+                },
+                {
+                    "$$hashKey": "object:2987",
+                    "alias": "MAX + PENDING",
+                    "dashes": true,
+                    "color": "#777777",
+                    "fill": 0,
+                    "stack": false
+                }
+            ],
+            "spaceLength": 10,
+            "stack": false,
+            "steppedLine": false,
+            "targets": [
+                {
+                    "exemplar": true,
+                    "expr": "sum by (WorkerId) (ray_vllm_kv_cache_usage_perc{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", })",
+                    "interval": "",
+                    "legendFormat": "GPU Cache Usage - {{WorkerId}}",
+                    "queryType": "randomWalk",
+                    "refId": "A"
+                }
+            ],
+            "thresholds": [],
+            "timeFrom": null,
+            "timeRegions": [],
+            "timeShift": null,
+            "title": "vLLM: Cache Utilization",
+            "tooltip": {
+                "shared": true,
+                "sort": 0,
+                "value_type": "individual"
+            },
+            "type": "graph",
+            "xaxis": {
+                "buckets": null,
+                "mode": "time",
+                "name": null,
+                "show": true,
+                "values": []
+            },
+            "yaxes": [
+                {
+                    "$$hashKey": "object:628",
+                    "format": "percentunit",
+                    "label": "",
+                    "logBase": 1,
+                    "max": null,
+                    "min": "0",
+                    "show": true
+                },
+                {
+                    "$$hashKey": "object:629",
+                    "format": "short",
+                    "label": null,
+                    "logBase": 1,
+                    "max": null,
+                    "min": null,
+                    "show": true
+                }
+            ],
+            "yaxis": {
+                "align": false,
+                "alignLevel": null
+            }
+        },
+        {
+            "aliasColors": {},
+            "bars": false,
+            "dashLength": 10,
+            "dashes": false,
+            "datasource": "${datasource}",
+            "description": "",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "percent"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "x": 12,
+                "y": 16,
+                "w": 12,
+                "h": 8
+            },
+            "fill": 1,
+            "fillGradient": 0,
+            "hiddenSeries": false,
+            "id": 31,
+            "legend": {
+                "alignAsTable": true,
+                "avg": true,
+                "current": true,
+                "hideEmpty": false,
+                "hideZero": true,
+                "max": true,
+                "min": false,
+                "rightSide": false,
+                "show": true,
+                "sort": "current",
+                "sortDesc": true,
+                "total": false,
+                "values": true
+            },
+            "lines": true,
             "linewidth": 1,
             "nullPointMode": null,
             "options": {
@@ -616,26 +816,34 @@
             "targets": [
                 {
                     "exemplar": true,
-                    "expr": "histogram_quantile(0.9, sum(rate(ray_serve_deployment_processing_latency_ms_bucket{route=~\"$Route\",route!~\"/-/.*\",application=~\"$Application\",deployment=~\"$Deployment\",replica=~\"$Replica\",ray_io_cluster=~\"$Cluster\"}[5m])) by (application, deployment, replica, le))",
+                    "expr": "max(100 * (sum by (WorkerId) (rate(ray_vllm_prefix_cache_hits_total{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval])) / sum by (WorkerId) (rate(ray_vllm_prefix_cache_queries_total{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval]))))",
                     "interval": "",
-                    "legendFormat": "{{application}}#{{deployment}}#{{replica}}",
+                    "legendFormat": "Max Hit Rate",
                     "queryType": "randomWalk",
                     "refId": "A"
                 },
                 {
                     "exemplar": true,
-                    "expr": "histogram_quantile(0.9, sum(rate(ray_serve_deployment_processing_latency_ms_bucket{route=~\"$Route\",route!~\"/-/.*\",application=~\"$Application\",deployment=~\"$Deployment\",replica=~\"$Replica\",ray_io_cluster=~\"$Cluster\"}[5m])) by (le))",
+                    "expr": "min(100 * (sum by (WorkerId) (rate(ray_vllm_prefix_cache_hits_total{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval])) / sum by (WorkerId) (rate(ray_vllm_prefix_cache_queries_total{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval]))))",
                     "interval": "",
-                    "legendFormat": "Total",
+                    "legendFormat": "Min Hit Rate",
                     "queryType": "randomWalk",
                     "refId": "B"
+                },
+                {
+                    "exemplar": true,
+                    "expr": "100 * (sum by (WorkerId) (rate(ray_vllm_prefix_cache_hits_total{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval])) / sum by (WorkerId) (rate(ray_vllm_prefix_cache_queries_total{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval])))",
+                    "interval": "",
+                    "legendFormat": "Hit Rate: worker {{WorkerId}}",
+                    "queryType": "randomWalk",
+                    "refId": "C"
                 }
             ],
             "thresholds": [],
             "timeFrom": null,
             "timeRegions": [],
             "timeShift": null,
-            "title": "P90 latency per replica",
+            "title": "vLLM: KV Cache Hit Rate",
             "tooltip": {
                 "shared": true,
                 "sort": 0,
@@ -652,7 +860,7 @@
             "yaxes": [
                 {
                     "$$hashKey": "object:628",
-                    "format": "ms",
+                    "format": "percent",
                     "label": "",
                     "logBase": 1,
                     "max": null,
@@ -680,20 +888,20 @@
             "dashLength": 10,
             "dashes": false,
             "datasource": "${datasource}",
-            "description": "P99 latency per replica.",
+            "description": "Latency from request start to first token returned (in seconds).",
             "fieldConfig": {
                 "defaults": {
-                    "unit": "ms"
+                    "unit": "s"
                 },
                 "overrides": []
             },
             "gridPos": {
-                "x": 16,
-                "y": 1,
-                "w": 8,
+                "x": 0,
+                "y": 24,
+                "w": 12,
                 "h": 8
             },
-            "fill": 0,
+            "fill": 1,
             "fillGradient": 0,
             "hiddenSeries": false,
             "id": 6,
@@ -713,7 +921,7 @@
                 "values": true
             },
             "lines": true,
-            "linewidth": 1,
+            "linewidth": 2,
             "nullPointMode": null,
             "options": {
                 "alertThreshold": true
@@ -752,26 +960,50 @@
             "targets": [
                 {
                     "exemplar": true,
-                    "expr": "histogram_quantile(0.99, sum(rate(ray_serve_deployment_processing_latency_ms_bucket{route=~\"$Route\",route!~\"/-/.*\",application=~\"$Application\",deployment=~\"$Deployment\",replica=~\"$Replica\",ray_io_cluster=~\"$Cluster\"}[5m])) by (application, deployment, replica, le))",
+                    "expr": "sum by(model_name, WorkerId) (rate(ray_vllm_e2e_request_latency_seconds_sum{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval]))\n/\nsum by(model_name, WorkerId) (rate(ray_vllm_e2e_request_latency_seconds_count{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval]))",
                     "interval": "",
-                    "legendFormat": "{{application}}#{{deployment}}#{{replica}}",
+                    "legendFormat": "Average - {{model_name}} - {{WorkerId}}",
                     "queryType": "randomWalk",
                     "refId": "A"
                 },
                 {
                     "exemplar": true,
-                    "expr": "histogram_quantile(0.99, sum(rate(ray_serve_deployment_processing_latency_ms_bucket{route=~\"$Route\",application=~\"$Application\",deployment=~\"$Deployment\",replica=~\"$Replica\",ray_io_cluster=~\"$Cluster\"}[5m])) by (le))",
+                    "expr": "histogram_quantile(0.5, sum by(le, model_name, WorkerId) (rate(ray_vllm_e2e_request_latency_seconds_bucket{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval])))",
                     "interval": "",
-                    "legendFormat": "Total",
+                    "legendFormat": "P50 - {{model_name}} - {{WorkerId}}",
                     "queryType": "randomWalk",
                     "refId": "B"
+                },
+                {
+                    "exemplar": true,
+                    "expr": "histogram_quantile(0.9, sum by(le, model_name, WorkerId) (rate(ray_vllm_e2e_request_latency_seconds_bucket{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval])))",
+                    "interval": "",
+                    "legendFormat": "P90 - {{model_name}} - {{WorkerId}}",
+                    "queryType": "randomWalk",
+                    "refId": "C"
+                },
+                {
+                    "exemplar": true,
+                    "expr": "histogram_quantile(0.95, sum by(le, model_name, WorkerId) (rate(ray_vllm_e2e_request_latency_seconds_bucket{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval])))",
+                    "interval": "",
+                    "legendFormat": "P95 - {{model_name}} - {{WorkerId}}",
+                    "queryType": "randomWalk",
+                    "refId": "D"
+                },
+                {
+                    "exemplar": true,
+                    "expr": "histogram_quantile(0.99, sum by(le, model_name, WorkerId) (rate(ray_vllm_e2e_request_latency_seconds_bucket{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval])))",
+                    "interval": "",
+                    "legendFormat": "P99 - {{model_name}} - {{WorkerId}}",
+                    "queryType": "randomWalk",
+                    "refId": "E"
                 }
             ],
             "thresholds": [],
             "timeFrom": null,
             "timeRegions": [],
             "timeShift": null,
-            "title": "P99 latency per replica",
+            "title": "vLLM: E2E Request Latency",
             "tooltip": {
                 "shared": true,
                 "sort": 0,
@@ -788,7 +1020,7 @@
             "yaxes": [
                 {
                     "$$hashKey": "object:628",
-                    "format": "ms",
+                    "format": "s",
                     "label": "",
                     "logBase": 1,
                     "max": null,
@@ -816,20 +1048,20 @@
             "dashLength": 10,
             "dashes": false,
             "datasource": "${datasource}",
-            "description": "Number of requests queued per deployment. Ignores \"Replica\" and \"Route\" variable.",
+            "description": "Number of requests in RUNNING, WAITING, and SWAPPED state",
             "fieldConfig": {
                 "defaults": {
-                    "unit": "requests"
+                    "unit": "Requests"
                 },
                 "overrides": []
             },
             "gridPos": {
-                "x": 0,
-                "y": 2,
+                "x": 12,
+                "y": 24,
                 "w": 12,
                 "h": 8
             },
-            "fill": 0,
+            "fill": 1,
             "fillGradient": 0,
             "hiddenSeries": false,
             "id": 7,
@@ -849,7 +1081,7 @@
                 "values": true
             },
             "lines": true,
-            "linewidth": 1,
+            "linewidth": 2,
             "nullPointMode": null,
             "options": {
                 "alertThreshold": true
@@ -888,146 +1120,34 @@
             "targets": [
                 {
                     "exemplar": true,
-                    "expr": "sum(ray_serve_deployment_queued_queries{application=~\"$Application\",deployment=~\"$Deployment\",replica=~\"$Replica\",ray_io_cluster=~\"$Cluster\"}) by (application, deployment)",
+                    "expr": "ray_vllm_num_requests_running{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }",
                     "interval": "",
-                    "legendFormat": "{{application}}#{{deployment}}#{{replica}}",
+                    "legendFormat": "Num Running - {{model_name}} - {{WorkerId}}",
                     "queryType": "randomWalk",
                     "refId": "A"
-                }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeRegions": [],
-            "timeShift": null,
-            "title": "Queue size per deployment",
-            "tooltip": {
-                "shared": true,
-                "sort": 0,
-                "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-                "buckets": null,
-                "mode": "time",
-                "name": null,
-                "show": true,
-                "values": []
-            },
-            "yaxes": [
-                {
-                    "$$hashKey": "object:628",
-                    "format": "requests",
-                    "label": "",
-                    "logBase": 1,
-                    "max": null,
-                    "min": "0",
-                    "show": true
                 },
-                {
-                    "$$hashKey": "object:629",
-                    "format": "short",
-                    "label": null,
-                    "logBase": 1,
-                    "max": null,
-                    "min": null,
-                    "show": true
-                }
-            ],
-            "yaxis": {
-                "align": false,
-                "alignLevel": null
-            }
-        },
-        {
-            "aliasColors": {},
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "${datasource}",
-            "description": "Current running requests for each replica.",
-            "fieldConfig": {
-                "defaults": {
-                    "unit": "requests"
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "x": 12,
-                "y": 2,
-                "w": 12,
-                "h": 8
-            },
-            "fill": 0,
-            "fillGradient": 0,
-            "hiddenSeries": false,
-            "id": 8,
-            "legend": {
-                "alignAsTable": true,
-                "avg": true,
-                "current": true,
-                "hideEmpty": false,
-                "hideZero": true,
-                "max": true,
-                "min": false,
-                "rightSide": false,
-                "show": true,
-                "sort": "current",
-                "sortDesc": true,
-                "total": false,
-                "values": true
-            },
-            "lines": true,
-            "linewidth": 1,
-            "nullPointMode": null,
-            "options": {
-                "alertThreshold": true
-            },
-            "percentage": false,
-            "pluginVersion": "7.5.17",
-            "pointradius": 2,
-            "points": false,
-            "renderer": "flot",
-            "seriesOverrides": [
-                {
-                    "$$hashKey": "object:2987",
-                    "alias": "MAX",
-                    "dashes": true,
-                    "color": "#1F60C4",
-                    "fill": 0,
-                    "stack": false
-                },
-                {
-                    "$$hashKey": "object:78",
-                    "alias": "/FINISHED|FAILED|DEAD|REMOVED|Failed Nodes:/",
-                    "hiddenSeries": true
-                },
-                {
-                    "$$hashKey": "object:2987",
-                    "alias": "MAX + PENDING",
-                    "dashes": true,
-                    "color": "#777777",
-                    "fill": 0,
-                    "stack": false
-                }
-            ],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
                 {
                     "exemplar": true,
-                    "expr": "sum(ray_serve_replica_processing_queries{application=~\"$Application\",deployment=~\"$Deployment\",replica=~\"$Replica\",ray_io_cluster=~\"$Cluster\"}) by (application, deployment, replica)",
+                    "expr": "ray_vllm_num_requests_swapped{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }",
                     "interval": "",
-                    "legendFormat": "{{application}}#{{deployment}}#{{replica}}",
+                    "legendFormat": "Num Swapped - {{model_name}} - {{WorkerId}}",
                     "queryType": "randomWalk",
-                    "refId": "A"
+                    "refId": "B"
+                },
+                {
+                    "exemplar": true,
+                    "expr": "ray_vllm_num_requests_waiting{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }",
+                    "interval": "",
+                    "legendFormat": "Num Waiting - {{model_name}} - {{WorkerId}}",
+                    "queryType": "randomWalk",
+                    "refId": "C"
                 }
             ],
             "thresholds": [],
             "timeFrom": null,
             "timeRegions": [],
             "timeShift": null,
-            "title": "Running requests per replica",
+            "title": "vLLM: Scheduler State",
             "tooltip": {
                 "shared": true,
                 "sort": 0,
@@ -1044,7 +1164,7 @@
             "yaxes": [
                 {
                     "$$hashKey": "object:628",
-                    "format": "requests",
+                    "format": "Requests",
                     "label": "",
                     "logBase": 1,
                     "max": null,
@@ -1072,23 +1192,23 @@
             "dashLength": 10,
             "dashes": false,
             "datasource": "${datasource}",
-            "description": "The number of multiplexed models for each replica.",
+            "description": "",
             "fieldConfig": {
                 "defaults": {
-                    "unit": "models"
+                    "unit": "short"
                 },
                 "overrides": []
             },
             "gridPos": {
                 "x": 0,
-                "y": 3,
-                "w": 8,
+                "y": 32,
+                "w": 12,
                 "h": 8
             },
-            "fill": 0,
+            "fill": 1,
             "fillGradient": 0,
             "hiddenSeries": false,
-            "id": 9,
+            "id": 33,
             "legend": {
                 "alignAsTable": true,
                 "avg": true,
@@ -1144,18 +1264,34 @@
             "targets": [
                 {
                     "exemplar": true,
-                    "expr": "sum(ray_serve_num_multiplexed_models{application=~\"$Application\",deployment=~\"$Deployment\",replica=~\"$Replica\",ray_io_cluster=~\"$Cluster\"}) by (application, deployment, replica)",
+                    "expr": "histogram_quantile(0.5, sum by(le, model_name, WorkerId) (rate(ray_vllm_request_prompt_tokens_bucket{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval])))",
                     "interval": "",
-                    "legendFormat": "{{application}}#{{deployment}}#{{replica}}",
+                    "legendFormat": "P50-{{model_name}}-{{WorkerId}}",
                     "queryType": "randomWalk",
                     "refId": "A"
+                },
+                {
+                    "exemplar": true,
+                    "expr": "histogram_quantile(0.90, sum by(le, model_name, WorkerId) (rate(ray_vllm_request_prompt_tokens_bucket{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval])))",
+                    "interval": "",
+                    "legendFormat": "P90-{{model_name}}-{{WorkerId}}",
+                    "queryType": "randomWalk",
+                    "refId": "B"
+                },
+                {
+                    "exemplar": true,
+                    "expr": "(sum by(model_name, WorkerId) (rate(ray_vllm_request_prompt_tokens_sum{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval]))\n/\nsum by(model_name, WorkerId) (rate(ray_vllm_request_prompt_tokens_count{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval])))",
+                    "interval": "",
+                    "legendFormat": "Average-{{model_name}}-{{WorkerId}}",
+                    "queryType": "randomWalk",
+                    "refId": "C"
                 }
             ],
             "thresholds": [],
             "timeFrom": null,
             "timeRegions": [],
             "timeShift": null,
-            "title": "Multiplexed models per replica",
+            "title": "vLLM: Prompt Length",
             "tooltip": {
                 "shared": true,
                 "sort": 0,
@@ -1172,7 +1308,7 @@
             "yaxes": [
                 {
                     "$$hashKey": "object:628",
-                    "format": "models",
+                    "format": "short",
                     "label": "",
                     "logBase": 1,
                     "max": null,
@@ -1200,20 +1336,164 @@
             "dashLength": 10,
             "dashes": false,
             "datasource": "${datasource}",
-            "description": "The number of times of multiplexed models loaded for each replica.",
+            "description": "",
             "fieldConfig": {
                 "defaults": {
-                    "unit": "times"
+                    "unit": "short"
                 },
                 "overrides": []
             },
             "gridPos": {
-                "x": 8,
-                "y": 3,
-                "w": 8,
+                "x": 12,
+                "y": 32,
+                "w": 12,
                 "h": 8
             },
-            "fill": 0,
+            "fill": 1,
+            "fillGradient": 0,
+            "hiddenSeries": false,
+            "id": 35,
+            "legend": {
+                "alignAsTable": true,
+                "avg": true,
+                "current": true,
+                "hideEmpty": false,
+                "hideZero": true,
+                "max": true,
+                "min": false,
+                "rightSide": false,
+                "show": true,
+                "sort": "current",
+                "sortDesc": true,
+                "total": false,
+                "values": true
+            },
+            "lines": true,
+            "linewidth": 1,
+            "nullPointMode": null,
+            "options": {
+                "alertThreshold": true
+            },
+            "percentage": false,
+            "pluginVersion": "7.5.17",
+            "pointradius": 2,
+            "points": false,
+            "renderer": "flot",
+            "seriesOverrides": [
+                {
+                    "$$hashKey": "object:2987",
+                    "alias": "MAX",
+                    "dashes": true,
+                    "color": "#1F60C4",
+                    "fill": 0,
+                    "stack": false
+                },
+                {
+                    "$$hashKey": "object:78",
+                    "alias": "/FINISHED|FAILED|DEAD|REMOVED|Failed Nodes:/",
+                    "hiddenSeries": true
+                },
+                {
+                    "$$hashKey": "object:2987",
+                    "alias": "MAX + PENDING",
+                    "dashes": true,
+                    "color": "#777777",
+                    "fill": 0,
+                    "stack": false
+                }
+            ],
+            "spaceLength": 10,
+            "stack": false,
+            "steppedLine": false,
+            "targets": [
+                {
+                    "exemplar": true,
+                    "expr": "histogram_quantile(0.50, sum by(le, model_name, WorkerId) (rate(ray_vllm_request_generation_tokens_bucket{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval])))",
+                    "interval": "",
+                    "legendFormat": "P50-{{model_name}}-{{WorkerId}}",
+                    "queryType": "randomWalk",
+                    "refId": "A"
+                },
+                {
+                    "exemplar": true,
+                    "expr": "histogram_quantile(0.90, sum by(le, model_name, WorkerId) (rate(ray_vllm_request_generation_tokens_bucket{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval])))",
+                    "interval": "",
+                    "legendFormat": "P90-{{model_name}}-{{WorkerId}}",
+                    "queryType": "randomWalk",
+                    "refId": "B"
+                },
+                {
+                    "exemplar": true,
+                    "expr": "(sum by(model_name, WorkerId) (rate(ray_vllm_request_generation_tokens_sum{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval])))\n/\n(sum by(model_name, WorkerId) (rate(ray_vllm_request_generation_tokens_count{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval])))",
+                    "interval": "",
+                    "legendFormat": "Average-{{model_name}}-{{WorkerId}}",
+                    "queryType": "randomWalk",
+                    "refId": "C"
+                }
+            ],
+            "thresholds": [],
+            "timeFrom": null,
+            "timeRegions": [],
+            "timeShift": null,
+            "title": "vLLM: Generation Length",
+            "tooltip": {
+                "shared": true,
+                "sort": 0,
+                "value_type": "individual"
+            },
+            "type": "graph",
+            "xaxis": {
+                "buckets": null,
+                "mode": "time",
+                "name": null,
+                "show": true,
+                "values": []
+            },
+            "yaxes": [
+                {
+                    "$$hashKey": "object:628",
+                    "format": "short",
+                    "label": "",
+                    "logBase": 1,
+                    "max": null,
+                    "min": "0",
+                    "show": true
+                },
+                {
+                    "$$hashKey": "object:629",
+                    "format": "short",
+                    "label": null,
+                    "logBase": 1,
+                    "max": null,
+                    "min": null,
+                    "show": true
+                }
+            ],
+            "yaxis": {
+                "align": false,
+                "alignLevel": null
+            }
+        },
+        {
+            "aliasColors": {},
+            "bars": false,
+            "dashLength": 10,
+            "dashes": false,
+            "datasource": "${datasource}",
+            "description": "Number of finished requests by their finish reason: either an EOS token was generated or the max sequence length was reached.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "Requests"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "x": 0,
+                "y": 48,
+                "w": 12,
+                "h": 8
+            },
+            "fill": 1,
             "fillGradient": 0,
             "hiddenSeries": false,
             "id": 10,
@@ -1233,7 +1513,7 @@
                 "values": true
             },
             "lines": true,
-            "linewidth": 1,
+            "linewidth": 2,
             "nullPointMode": null,
             "options": {
                 "alertThreshold": true
@@ -1272,9 +1552,9 @@
             "targets": [
                 {
                     "exemplar": true,
-                    "expr": "sum(ray_serve_multiplexed_models_load_counter_total{application=~\"$Application\",deployment=~\"$Deployment\",replica=~\"$Replica\",ray_io_cluster=~\"$Cluster\"}) by (application, deployment, replica)",
+                    "expr": "sum by(finished_reason, model_name, WorkerId) (increase(ray_vllm_request_success_total{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval]))",
                     "interval": "",
-                    "legendFormat": "{{application}}#{{deployment}}#{{replica}}",
+                    "legendFormat": "{{finished_reason}} - {{model_name}} - {{WorkerId}}",
                     "queryType": "randomWalk",
                     "refId": "A"
                 }
@@ -1283,7 +1563,7 @@
             "timeFrom": null,
             "timeRegions": [],
             "timeShift": null,
-            "title": "Multiplexed model loads per replica",
+            "title": "vLLM: Finish Reason",
             "tooltip": {
                 "shared": true,
                 "sort": 0,
@@ -1300,7 +1580,7 @@
             "yaxes": [
                 {
                     "$$hashKey": "object:628",
-                    "format": "times",
+                    "format": "Requests",
                     "label": "",
                     "logBase": 1,
                     "max": null,
@@ -1328,20 +1608,20 @@
             "dashLength": 10,
             "dashes": false,
             "datasource": "${datasource}",
-            "description": "The number of times of multiplexed models unloaded for each replica.",
+            "description": "",
             "fieldConfig": {
                 "defaults": {
-                    "unit": "times"
+                    "unit": "s"
                 },
                 "overrides": []
             },
             "gridPos": {
-                "x": 16,
-                "y": 3,
-                "w": 8,
+                "x": 12,
+                "y": 48,
+                "w": 12,
                 "h": 8
             },
-            "fill": 0,
+            "fill": 1,
             "fillGradient": 0,
             "hiddenSeries": false,
             "id": 11,
@@ -1361,7 +1641,7 @@
                 "values": true
             },
             "lines": true,
-            "linewidth": 1,
+            "linewidth": 2,
             "nullPointMode": null,
             "options": {
                 "alertThreshold": true
@@ -1400,9 +1680,9 @@
             "targets": [
                 {
                     "exemplar": true,
-                    "expr": "sum(ray_serve_multiplexed_models_unload_counter_total{application=~\"$Application\",deployment=~\"$Deployment\",replica=~\"$Replica\",ray_io_cluster=~\"$Cluster\"}) by (application, deployment, replica)",
+                    "expr": "sum by(model_name, WorkerId) (rate(ray_vllm_request_queue_time_seconds_sum{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval]))",
                     "interval": "",
-                    "legendFormat": "{{application}}#{{deployment}}#{{replica}}",
+                    "legendFormat": "{{model_name}} - {{WorkerId}}",
                     "queryType": "randomWalk",
                     "refId": "A"
                 }
@@ -1411,7 +1691,7 @@
             "timeFrom": null,
             "timeRegions": [],
             "timeShift": null,
-            "title": "Multiplexed model unloads per replica",
+            "title": "vLLM: Queue Time",
             "tooltip": {
                 "shared": true,
                 "sort": 0,
@@ -1428,7 +1708,7 @@
             "yaxes": [
                 {
                     "$$hashKey": "object:628",
-                    "format": "times",
+                    "format": "s",
                     "label": "",
                     "logBase": 1,
                     "max": null,
@@ -1456,20 +1736,20 @@
             "dashLength": 10,
             "dashes": false,
             "datasource": "${datasource}",
-            "description": "P99 latency of multiplexed model load per replica.",
+            "description": "",
             "fieldConfig": {
                 "defaults": {
-                    "unit": "ms"
+                    "unit": "s"
                 },
                 "overrides": []
             },
             "gridPos": {
                 "x": 0,
-                "y": 4,
-                "w": 8,
+                "y": 56,
+                "w": 12,
                 "h": 8
             },
-            "fill": 0,
+            "fill": 1,
             "fillGradient": 0,
             "hiddenSeries": false,
             "id": 12,
@@ -1489,7 +1769,7 @@
                 "values": true
             },
             "lines": true,
-            "linewidth": 1,
+            "linewidth": 2,
             "nullPointMode": null,
             "options": {
                 "alertThreshold": true
@@ -1528,18 +1808,26 @@
             "targets": [
                 {
                     "exemplar": true,
-                    "expr": "histogram_quantile(0.99, sum(rate(ray_serve_multiplexed_model_load_latency_ms_bucket{application=~\"$Application\",deployment=~\"$Deployment\",replica=~\"$Replica\",ray_io_cluster=~\"$Cluster\"}[5m])) by (application, deployment, replica, le))",
+                    "expr": "sum by(model_name, WorkerId) (rate(ray_vllm_request_decode_time_seconds_sum{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval]))",
                     "interval": "",
-                    "legendFormat": "{{application}}#{{deployment}}#{{replica}}",
+                    "legendFormat": "Decode - {{model_name}} - {{WorkerId}}",
                     "queryType": "randomWalk",
                     "refId": "A"
+                },
+                {
+                    "exemplar": true,
+                    "expr": "sum by(model_name, WorkerId) (rate(ray_vllm_request_prefill_time_seconds_sum{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval]))",
+                    "interval": "",
+                    "legendFormat": "Prefill - {{model_name}} - {{WorkerId}}",
+                    "queryType": "randomWalk",
+                    "refId": "B"
                 }
             ],
             "thresholds": [],
             "timeFrom": null,
             "timeRegions": [],
             "timeShift": null,
-            "title": "P99 latency of multiplexed model loads per replica",
+            "title": "vLLM: Requests Prefill and Decode Time",
             "tooltip": {
                 "shared": true,
                 "sort": 0,
@@ -1556,7 +1844,7 @@
             "yaxes": [
                 {
                     "$$hashKey": "object:628",
-                    "format": "ms",
+                    "format": "s",
                     "label": "",
                     "logBase": 1,
                     "max": null,
@@ -1584,20 +1872,20 @@
             "dashLength": 10,
             "dashes": false,
             "datasource": "${datasource}",
-            "description": "P99 latency of multiplexed model unload per replica.",
+            "description": "",
             "fieldConfig": {
                 "defaults": {
-                    "unit": "ms"
+                    "unit": "none"
                 },
                 "overrides": []
             },
             "gridPos": {
-                "x": 8,
-                "y": 4,
-                "w": 8,
+                "x": 12,
+                "y": 56,
+                "w": 12,
                 "h": 8
             },
-            "fill": 0,
+            "fill": 1,
             "fillGradient": 0,
             "hiddenSeries": false,
             "id": 13,
@@ -1617,7 +1905,7 @@
                 "values": true
             },
             "lines": true,
-            "linewidth": 1,
+            "linewidth": 2,
             "nullPointMode": null,
             "options": {
                 "alertThreshold": true
@@ -1656,9 +1944,9 @@
             "targets": [
                 {
                     "exemplar": true,
-                    "expr": "histogram_quantile(0.99, sum(rate(ray_serve_multiplexed_model_unload_latency_ms_bucket{application=~\"$Application\",deployment=~\"$Deployment\",replica=~\"$Replica\",ray_io_cluster=~\"$Cluster\"}[5m])) by (application, deployment, replica, le))",
+                    "expr": "sum by(model_name, WorkerId) (rate(ray_vllm_request_max_num_generation_tokens_sum{model_name=~\"$vllm_model_name\", WorkerId=~\"$workerid\", }[$interval]))",
                     "interval": "",
-                    "legendFormat": "{{application}}#{{deployment}}#{{replica}}",
+                    "legendFormat": "{{model_name}} - {{WorkerId}}",
                     "queryType": "randomWalk",
                     "refId": "A"
                 }
@@ -1667,7 +1955,7 @@
             "timeFrom": null,
             "timeRegions": [],
             "timeShift": null,
-            "title": "P99 latency of multiplexed model unloads per replica",
+            "title": "vLLM: Max Generation Token in Sequence Group",
             "tooltip": {
                 "shared": true,
                 "sort": 0,
@@ -1684,7 +1972,7 @@
             "yaxes": [
                 {
                     "$$hashKey": "object:628",
-                    "format": "ms",
+                    "format": "none",
                     "label": "",
                     "logBase": 1,
                     "max": null,
@@ -1707,112 +1995,78 @@
             }
         },
         {
-            "aliasColors": {},
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
             "datasource": "${datasource}",
-            "description": "The ids of multiplexed models for each replica.",
             "fieldConfig": {
                 "defaults": {
-                    "unit": "model"
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [],
+                    "min": 0,
+                    "thresholds": {
+                        "mode": "percentage",
+                        "steps": [
+                            {
+                                "color": "super-light-yellow",
+                                "value": null
+                            },
+                            {
+                                "color": "super-light-green",
+                                "value": 50
+                            },
+                            {
+                                "color": "green",
+                                "value": 100
+                            }
+                        ]
+                    },
+                    "unit": "short"
                 },
                 "overrides": []
             },
-            "gridPos": {
-                "x": 16,
-                "y": 4,
-                "w": 8,
-                "h": 8
-            },
-            "fill": 10,
-            "fillGradient": 0,
-            "hiddenSeries": false,
             "id": 14,
-            "legend": {
-                "alignAsTable": true,
-                "avg": true,
-                "current": true,
-                "hideEmpty": false,
-                "hideZero": true,
-                "max": true,
-                "min": false,
-                "rightSide": false,
-                "show": true,
-                "sort": "current",
-                "sortDesc": true,
-                "total": false,
-                "values": true
-            },
-            "lines": true,
-            "linewidth": 1,
-            "nullPointMode": null,
             "options": {
-                "alertThreshold": true
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "text": {},
+                "textMode": "auto"
             },
-            "percentage": false,
             "pluginVersion": "7.5.17",
-            "pointradius": 2,
-            "points": false,
-            "renderer": "flot",
-            "seriesOverrides": [
-                {
-                    "$$hashKey": "object:2987",
-                    "alias": "MAX",
-                    "dashes": true,
-                    "color": "#1F60C4",
-                    "fill": 0,
-                    "stack": false
-                },
-                {
-                    "$$hashKey": "object:78",
-                    "alias": "/FINISHED|FAILED|DEAD|REMOVED|Failed Nodes:/",
-                    "hiddenSeries": true
-                },
-                {
-                    "$$hashKey": "object:2987",
-                    "alias": "MAX + PENDING",
-                    "dashes": true,
-                    "color": "#777777",
-                    "fill": 0,
-                    "stack": false
-                }
-            ],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
             "targets": [
                 {
                     "exemplar": true,
-                    "expr": "ray_serve_registered_multiplexed_model_id{application=~\"$Application\",deployment=~\"$Deployment\",replica=~\"$Replica\",ray_io_cluster=~\"$Cluster\"}",
+                    "expr": "(sum by (model_name) (delta(ray_vllm_prompt_tokens_total{WorkerId=~\"$workerid\", }[1d])))",
                     "interval": "",
-                    "legendFormat": "{{replica}}:{{model_id}}",
+                    "legendFormat": "Input: {{model_name}}",
                     "queryType": "randomWalk",
                     "refId": "A"
+                },
+                {
+                    "exemplar": true,
+                    "expr": "(sum by (model_name) (delta(ray_vllm_generation_tokens_total{WorkerId=~\"$workerid\", }[1d])))",
+                    "interval": "",
+                    "legendFormat": "Generated: {{model_name}}",
+                    "queryType": "randomWalk",
+                    "refId": "B"
                 }
             ],
-            "thresholds": [],
             "timeFrom": null,
-            "timeRegions": [],
             "timeShift": null,
-            "title": "Multiplexed model ids per replica",
-            "tooltip": {
-                "shared": true,
-                "sort": 0,
-                "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-                "buckets": null,
-                "mode": "time",
-                "name": null,
-                "show": true,
-                "values": []
-            },
+            "title": "Tokens Last 24 Hours",
+            "type": "stat",
             "yaxes": [
                 {
                     "$$hashKey": "object:628",
-                    "format": "model",
+                    "format": "short",
                     "label": "",
                     "logBase": 1,
                     "max": null,
@@ -1829,118 +2083,87 @@
                     "show": true
                 }
             ],
-            "yaxis": {
-                "align": false,
-                "alignLevel": null
-            }
-        },
-        {
-            "aliasColors": {},
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": "${datasource}",
-            "description": "The cache hit rate of multiplexed models for the deployment.",
-            "fieldConfig": {
-                "defaults": {
-                    "unit": "%"
-                },
-                "overrides": []
-            },
+            "description": "",
             "gridPos": {
                 "x": 0,
-                "y": 5,
-                "w": 8,
+                "y": 64,
+                "w": 12,
                 "h": 8
+            }
+        },
+        {
+            "datasource": "${datasource}",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [],
+                    "min": 0,
+                    "thresholds": {
+                        "mode": "percentage",
+                        "steps": [
+                            {
+                                "color": "super-light-yellow",
+                                "value": null
+                            },
+                            {
+                                "color": "super-light-green",
+                                "value": 50
+                            },
+                            {
+                                "color": "green",
+                                "value": 100
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
             },
-            "fill": 10,
-            "fillGradient": 0,
-            "hiddenSeries": false,
             "id": 15,
-            "legend": {
-                "alignAsTable": true,
-                "avg": true,
-                "current": true,
-                "hideEmpty": false,
-                "hideZero": true,
-                "max": true,
-                "min": false,
-                "rightSide": false,
-                "show": true,
-                "sort": "current",
-                "sortDesc": true,
-                "total": false,
-                "values": true
-            },
-            "lines": true,
-            "linewidth": 1,
-            "nullPointMode": "connected",
             "options": {
-                "alertThreshold": true
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "text": {},
+                "textMode": "auto"
             },
-            "percentage": false,
             "pluginVersion": "7.5.17",
-            "pointradius": 2,
-            "points": false,
-            "renderer": "flot",
-            "seriesOverrides": [
-                {
-                    "$$hashKey": "object:2987",
-                    "alias": "MAX",
-                    "dashes": true,
-                    "color": "#1F60C4",
-                    "fill": 0,
-                    "stack": false
-                },
-                {
-                    "$$hashKey": "object:78",
-                    "alias": "/FINISHED|FAILED|DEAD|REMOVED|Failed Nodes:/",
-                    "hiddenSeries": true
-                },
-                {
-                    "$$hashKey": "object:2987",
-                    "alias": "MAX + PENDING",
-                    "dashes": true,
-                    "color": "#777777",
-                    "fill": 0,
-                    "stack": false
-                }
-            ],
-            "spaceLength": 10,
-            "stack": true,
-            "steppedLine": false,
             "targets": [
                 {
                     "exemplar": true,
-                    "expr": "(1 - sum(rate(ray_serve_multiplexed_models_load_counter_total{application=~\"$Application\",deployment=~\"$Deployment\",replica=~\"$Replica\",ray_io_cluster=~\"$Cluster\"}[5m]))/sum(rate(ray_serve_multiplexed_get_model_requests_counter_total{application=~\"$Application\",deployment=~\"$Deployment\",replica=~\"$Replica\",ray_io_cluster=~\"$Cluster\"}[5m])))",
+                    "expr": "delta(ray_vllm_prompt_tokens_total{WorkerId=~\"$workerid\", }[1h])",
                     "interval": "",
-                    "legendFormat": "{{application}}#{{deployment}}#{{replica}}",
+                    "legendFormat": "Input: {{model_name}}",
                     "queryType": "randomWalk",
                     "refId": "A"
+                },
+                {
+                    "exemplar": true,
+                    "expr": "delta(ray_vllm_generation_tokens_total{WorkerId=~\"$workerid\", }[1h])",
+                    "interval": "",
+                    "legendFormat": "Generated: {{model_name}}",
+                    "queryType": "randomWalk",
+                    "refId": "B"
                 }
             ],
-            "thresholds": [],
             "timeFrom": null,
-            "timeRegions": [],
             "timeShift": null,
-            "title": "Multiplexed model cache hit rate",
-            "tooltip": {
-                "shared": true,
-                "sort": 0,
-                "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-                "buckets": null,
-                "mode": "time",
-                "name": null,
-                "show": true,
-                "values": []
-            },
+            "title": "Tokens Last Hour",
+            "type": "stat",
             "yaxes": [
                 {
                     "$$hashKey": "object:628",
-                    "format": "%",
+                    "format": "short",
                     "label": "",
                     "logBase": 1,
                     "max": null,
@@ -1957,9 +2180,752 @@
                     "show": true
                 }
             ],
-            "yaxis": {
-                "align": false,
-                "alignLevel": null
+            "description": "",
+            "gridPos": {
+                "x": 12,
+                "y": 64,
+                "w": 12,
+                "h": 8
+            }
+        },
+        {
+            "datasource": "${datasource}",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [],
+                    "min": 0,
+                    "thresholds": {
+                        "mode": "percentage",
+                        "steps": [
+                            {
+                                "color": "super-light-yellow",
+                                "value": null
+                            },
+                            {
+                                "color": "super-light-green",
+                                "value": 50
+                            },
+                            {
+                                "color": "green",
+                                "value": 100
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "id": 18,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "text": {},
+                "textMode": "auto"
+            },
+            "pluginVersion": "7.5.17",
+            "targets": [
+                {
+                    "exemplar": true,
+                    "expr": "sum by (model_name) (delta(ray_vllm_prompt_tokens_total{WorkerId=~\"$workerid\", }[1d])) / sum by (model_name) (delta(ray_vllm_generation_tokens_total{WorkerId=~\"$workerid\", }[1d]))",
+                    "interval": "",
+                    "legendFormat": "{{model_name}}",
+                    "queryType": "randomWalk",
+                    "refId": "A"
+                }
+            ],
+            "timeFrom": null,
+            "timeShift": null,
+            "title": "Ratio Input:Generated Tokens Last 24 Hours",
+            "type": "stat",
+            "yaxes": [
+                {
+                    "$$hashKey": "object:628",
+                    "format": "short",
+                    "label": "",
+                    "logBase": 1,
+                    "max": null,
+                    "min": "0",
+                    "show": true
+                },
+                {
+                    "$$hashKey": "object:629",
+                    "format": "short",
+                    "label": null,
+                    "logBase": 1,
+                    "max": null,
+                    "min": null,
+                    "show": true
+                }
+            ],
+            "description": "",
+            "gridPos": {
+                "x": 0,
+                "y": 72,
+                "w": 12,
+                "h": 8
+            }
+        },
+        {
+            "datasource": "${datasource}",
+            "description": "",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "Requests"
+                },
+                "overrides": []
+            },
+            "id": 16,
+            "options": {
+                "displayLabels": [],
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "right",
+                    "values": [
+                        "percent",
+                        "value"
+                    ]
+                },
+                "pieType": "pie",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "text": {}
+            },
+            "pluginVersion": "7.5.17",
+            "targets": [
+                {
+                    "exemplar": true,
+                    "expr": "sum by (model_name) (delta(ray_vllm_request_success_total{WorkerId=~\"$workerid\", }[1d]))",
+                    "interval": "",
+                    "legendFormat": "{{model_name}}",
+                    "queryType": "randomWalk",
+                    "refId": "A"
+                }
+            ],
+            "timeFrom": null,
+            "timeShift": null,
+            "title": "Distribution of Requests Per Model Last 24 Hours",
+            "type": "piechart",
+            "yaxes": [
+                {
+                    "$$hashKey": "object:628",
+                    "format": "Requests",
+                    "label": "",
+                    "logBase": 1,
+                    "max": null,
+                    "min": "0",
+                    "show": true
+                },
+                {
+                    "$$hashKey": "object:629",
+                    "format": "short",
+                    "label": null,
+                    "logBase": 1,
+                    "max": null,
+                    "min": null,
+                    "show": true
+                }
+            ],
+            "gridPos": {
+                "x": 12,
+                "y": 72,
+                "w": 12,
+                "h": 8
+            }
+        },
+        {
+            "datasource": "${datasource}",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [],
+                    "min": 0,
+                    "thresholds": {
+                        "mode": "percentage",
+                        "steps": [
+                            {
+                                "color": "super-light-yellow",
+                                "value": null
+                            },
+                            {
+                                "color": "super-light-green",
+                                "value": 50
+                            },
+                            {
+                                "color": "green",
+                                "value": 100
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "id": 21,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "text": {},
+                "textMode": "auto"
+            },
+            "pluginVersion": "7.5.17",
+            "targets": [
+                {
+                    "exemplar": true,
+                    "expr": "max_over_time(sum by (model_name) (rate(ray_vllm_generation_tokens_total{WorkerId=~\"$workerid\", }[2m]))[24h:1m])",
+                    "interval": "",
+                    "legendFormat": "{{model_name}}",
+                    "queryType": "randomWalk",
+                    "refId": "A"
+                }
+            ],
+            "timeFrom": null,
+            "timeShift": null,
+            "title": "Peak Tokens Per Second Per Model Last 24 Hours",
+            "type": "stat",
+            "yaxes": [
+                {
+                    "$$hashKey": "object:628",
+                    "format": "short",
+                    "label": "",
+                    "logBase": 1,
+                    "max": null,
+                    "min": "0",
+                    "show": true
+                },
+                {
+                    "$$hashKey": "object:629",
+                    "format": "short",
+                    "label": null,
+                    "logBase": 1,
+                    "max": null,
+                    "min": null,
+                    "show": true
+                }
+            ],
+            "description": "",
+            "gridPos": {
+                "x": 0,
+                "y": 80,
+                "w": 12,
+                "h": 8
+            }
+        },
+        {
+            "datasource": "${datasource}",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [],
+                    "min": 0,
+                    "thresholds": {
+                        "mode": "percentage",
+                        "steps": [
+                            {
+                                "color": "super-light-yellow",
+                                "value": null
+                            },
+                            {
+                                "color": "super-light-green",
+                                "value": 50
+                            },
+                            {
+                                "color": "green",
+                                "value": 100
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "id": 19,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "text": {},
+                "textMode": "auto"
+            },
+            "pluginVersion": "7.5.17",
+            "targets": [
+                {
+                    "exemplar": true,
+                    "expr": "sum by (model_name) (delta(ray_vllm_prompt_tokens_total{WorkerId=~\"$workerid\", }[1d])) + sum by (model_name) (delta(ray_vllm_generation_tokens_total{WorkerId=~\"$workerid\", }[1d]))",
+                    "interval": "",
+                    "legendFormat": "{{model_name}}",
+                    "queryType": "randomWalk",
+                    "refId": "A"
+                }
+            ],
+            "timeFrom": null,
+            "timeShift": null,
+            "title": "Tokens Per Model Last 24 Hours",
+            "type": "stat",
+            "yaxes": [
+                {
+                    "$$hashKey": "object:628",
+                    "format": "short",
+                    "label": "",
+                    "logBase": 1,
+                    "max": null,
+                    "min": "0",
+                    "show": true
+                },
+                {
+                    "$$hashKey": "object:629",
+                    "format": "short",
+                    "label": null,
+                    "logBase": 1,
+                    "max": null,
+                    "min": null,
+                    "show": true
+                }
+            ],
+            "description": "",
+            "gridPos": {
+                "x": 12,
+                "y": 80,
+                "w": 12,
+                "h": 8
+            }
+        },
+        {
+            "datasource": "${datasource}",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "continuous-YlBl"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "percentage",
+                        "steps": [
+                            {
+                                "color": "rgb(230, 230, 230)",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "id": 24,
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "showThresholdLabels": false,
+                "showThresholdMarkers": false,
+                "text": {
+                    "titleSize": 12
+                }
+            },
+            "pluginVersion": "7.5.17",
+            "targets": [
+                {
+                    "exemplar": true,
+                    "expr": "(sum by (model_name) (delta(ray_vllm_prompt_tokens_total{WorkerId=~\"$workerid\", }[1w])) +\nsum by (model_name) (delta(ray_vllm_generation_tokens_total{WorkerId=~\"$workerid\", }[1w]))) / sum by (model_name) (delta(ray_vllm_request_success_total{WorkerId=~\"$workerid\", }[1w]))",
+                    "interval": "",
+                    "legendFormat": "{{ model_name}}",
+                    "queryType": "randomWalk",
+                    "refId": "A"
+                }
+            ],
+            "title": "Avg Total Tokens Per Request Last 7 Days",
+            "type": "gauge",
+            "yaxes": [
+                {
+                    "$$hashKey": "object:628",
+                    "format": "short",
+                    "label": "",
+                    "logBase": 1,
+                    "max": null,
+                    "min": "0",
+                    "show": true
+                },
+                {
+                    "$$hashKey": "object:629",
+                    "format": "short",
+                    "label": null,
+                    "logBase": 1,
+                    "max": null,
+                    "min": null,
+                    "show": true
+                }
+            ],
+            "description": "",
+            "gridPos": {
+                "x": 0,
+                "y": 88,
+                "w": 12,
+                "h": 8
+            }
+        },
+        {
+            "datasource": "${datasource}",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "continuous-YlBl"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "percentage",
+                        "steps": [
+                            {
+                                "color": "rgb(230, 230, 230)",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "id": 23,
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "showThresholdLabels": false,
+                "showThresholdMarkers": false,
+                "text": {
+                    "titleSize": 12
+                }
+            },
+            "pluginVersion": "7.5.17",
+            "targets": [
+                {
+                    "exemplar": true,
+                    "expr": "sum by (model_name) (delta(ray_vllm_request_success_total{WorkerId=~\"$workerid\", }[1w]))",
+                    "interval": "",
+                    "legendFormat": "{{ model_name}}",
+                    "queryType": "randomWalk",
+                    "refId": "A"
+                }
+            ],
+            "title": "Requests Per Model Last Week",
+            "type": "gauge",
+            "yaxes": [
+                {
+                    "$$hashKey": "object:628",
+                    "format": "short",
+                    "label": "",
+                    "logBase": 1,
+                    "max": null,
+                    "min": "0",
+                    "show": true
+                },
+                {
+                    "$$hashKey": "object:629",
+                    "format": "short",
+                    "label": null,
+                    "logBase": 1,
+                    "max": null,
+                    "min": null,
+                    "show": true
+                }
+            ],
+            "description": "",
+            "gridPos": {
+                "x": 12,
+                "y": 88,
+                "w": 12,
+                "h": 8
+            }
+        },
+        {
+            "datasource": "${datasource}",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "continuous-YlBl"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "percentage",
+                        "steps": [
+                            {
+                                "color": "rgb(230, 230, 230)",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "id": 26,
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "showThresholdLabels": false,
+                "showThresholdMarkers": false,
+                "text": {
+                    "titleSize": 12
+                }
+            },
+            "pluginVersion": "7.5.17",
+            "targets": [
+                {
+                    "exemplar": true,
+                    "expr": "sum by (model_name) (delta(ray_vllm_prompt_tokens_total{WorkerId=~\"$workerid\", }[1w]))",
+                    "interval": "",
+                    "legendFormat": "In: {{ model_name}}",
+                    "queryType": "randomWalk",
+                    "refId": "A"
+                },
+                {
+                    "exemplar": true,
+                    "expr": "sum by (model_name) (delta(ray_vllm_generation_tokens_total{WorkerId=~\"$workerid\", }[1w]))",
+                    "interval": "",
+                    "legendFormat": "Out: {{ model_name }}",
+                    "queryType": "randomWalk",
+                    "refId": "B"
+                }
+            ],
+            "title": "Tokens Per Model Last 7 Days",
+            "type": "gauge",
+            "yaxes": [
+                {
+                    "$$hashKey": "object:628",
+                    "format": "short",
+                    "label": "",
+                    "logBase": 1,
+                    "max": null,
+                    "min": "0",
+                    "show": true
+                },
+                {
+                    "$$hashKey": "object:629",
+                    "format": "short",
+                    "label": null,
+                    "logBase": 1,
+                    "max": null,
+                    "min": null,
+                    "show": true
+                }
+            ],
+            "description": "",
+            "gridPos": {
+                "x": 0,
+                "y": 96,
+                "w": 12,
+                "h": 8
+            }
+        },
+        {
+            "datasource": "${datasource}",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "continuous-YlBl"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "percentage",
+                        "steps": [
+                            {
+                                "color": "rgb(230, 230, 230)",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "id": 25,
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "showThresholdLabels": false,
+                "showThresholdMarkers": false,
+                "text": {
+                    "titleSize": 12
+                }
+            },
+            "pluginVersion": "7.5.17",
+            "targets": [
+                {
+                    "exemplar": true,
+                    "expr": "(sum by (model_name) (delta(ray_vllm_prompt_tokens_total{WorkerId=~\"$workerid\", }[1w])) + sum by (model_name) (delta(ray_vllm_generation_tokens_total{WorkerId=~\"$workerid\", }[1w])))/ sum by (model_name) (delta(ray_vllm_request_success_total{WorkerId=~\"$workerid\", }[1w]))",
+                    "interval": "",
+                    "legendFormat": "{{ model_name}}",
+                    "queryType": "randomWalk",
+                    "refId": "A"
+                }
+            ],
+            "title": "Avg Total Tokens Per Request Per Model Last 7 Days",
+            "type": "gauge",
+            "yaxes": [
+                {
+                    "$$hashKey": "object:628",
+                    "format": "short",
+                    "label": "",
+                    "logBase": 1,
+                    "max": null,
+                    "min": "0",
+                    "show": true
+                },
+                {
+                    "$$hashKey": "object:629",
+                    "format": "short",
+                    "label": null,
+                    "logBase": 1,
+                    "max": null,
+                    "min": null,
+                    "show": true
+                }
+            ],
+            "description": "",
+            "gridPos": {
+                "x": 12,
+                "y": 96,
+                "w": 12,
+                "h": 8
+            }
+        },
+        {
+            "datasource": "${datasource}",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "continuous-YlBl"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "percentage",
+                        "steps": [
+                            {
+                                "color": "rgb(230, 230, 230)",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "id": 27,
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "showThresholdLabels": false,
+                "showThresholdMarkers": false,
+                "text": {
+                    "titleSize": 12
+                }
+            },
+            "pluginVersion": "7.5.17",
+            "targets": [
+                {
+                    "exemplar": true,
+                    "expr": "sum by (model_name) (delta(ray_vllm_prompt_tokens_total{WorkerId=~\"$workerid\", }[1w])) / sum by (model_name) (delta(ray_vllm_request_success_total{WorkerId=~\"$workerid\", }[1w]))",
+                    "interval": "",
+                    "legendFormat": "In: {{ model_name}}",
+                    "queryType": "randomWalk",
+                    "refId": "A"
+                },
+                {
+                    "exemplar": true,
+                    "expr": "sum by (model_name) (delta(ray_vllm_generation_tokens_total{WorkerId=~\"$workerid\", }[1w])) / sum by (model_name) (delta(ray_vllm_request_success_total{WorkerId=~\"$workerid\", }[1w]))",
+                    "interval": "",
+                    "legendFormat": "Out: {{ model_name}}",
+                    "queryType": "randomWalk",
+                    "refId": "B"
+                }
+            ],
+            "title": "Tokens Per Request Per Model Last 7 Days",
+            "type": "gauge",
+            "yaxes": [
+                {
+                    "$$hashKey": "object:628",
+                    "format": "short",
+                    "label": "",
+                    "logBase": 1,
+                    "max": null,
+                    "min": "0",
+                    "show": true
+                },
+                {
+                    "$$hashKey": "object:629",
+                    "format": "short",
+                    "label": null,
+                    "logBase": 1,
+                    "max": null,
+                    "min": null,
+                    "show": true
+                }
+            ],
+            "description": "",
+            "gridPos": {
+                "x": 12,
+                "y": 104,
+                "w": 12,
+                "h": 8
             }
         }
     ],
@@ -1975,7 +2941,7 @@
                 "current": {
                     "selected": false
                 },
-                "description": "Filter queries to specific prometheus type.",
+                "description": "Filter queries of a specific Prometheus type.",
                 "hide": 2,
                 "includeAll": false,
                 "multi": false,
@@ -1988,173 +2954,119 @@
                 "type": "datasource"
             },
             {
-                "allValue": ".*",
-                "current": {
-                    "selected": true,
-                    "text": [
-                        "All"
-                    ],
-                    "value": [
-                        "$__all"
-                    ]
-                },
-                "datasource": "${datasource}",
-                "definition": "label_values(ray_serve_deployment_replica_healthy{}, application)",
-                "description": null,
-                "error": null,
-                "hide": 0,
-                "includeAll": true,
-                "label": null,
-                "multi": true,
-                "name": "Application",
-                "options": [],
-                "query": {
-                    "query": "label_values(ray_serve_deployment_replica_healthy{}, application)",
-                    "refId": "Prometheus-Instance-Variable-Query"
-                },
-                "refresh": 1,
-                "regex": "",
-                "skipUrlSync": false,
-                "sort": 0,
-                "tagValuesQuery": "",
-                "tags": [],
-                "tagsQuery": "",
+                "name": "vllm_model_name",
+                "label": "vLLM Model Name",
                 "type": "query",
-                "useTags": false
-            },
-            {
-                "allValue": ".*",
-                "current": {
-                    "selected": true,
-                    "text": [
-                        "All"
-                    ],
-                    "value": [
-                        "$__all"
-                    ]
-                },
-                "datasource": "${datasource}",
-                "definition": "label_values(ray_serve_deployment_replica_healthy{application=~\"$Application\",}, deployment)",
-                "description": null,
-                "error": null,
                 "hide": 0,
-                "includeAll": true,
-                "label": null,
-                "multi": true,
-                "name": "Deployment",
-                "options": [],
-                "query": {
-                    "query": "label_values(ray_serve_deployment_replica_healthy{application=~\"$Application\",}, deployment)",
-                    "refId": "Prometheus-Instance-Variable-Query"
-                },
-                "refresh": 1,
-                "regex": "",
-                "skipUrlSync": false,
-                "sort": 0,
-                "tagValuesQuery": "",
-                "tags": [],
-                "tagsQuery": "",
-                "type": "query",
-                "useTags": false
-            },
-            {
-                "allValue": ".*",
-                "current": {
-                    "selected": true,
-                    "text": [
-                        "All"
-                    ],
-                    "value": [
-                        "$__all"
-                    ]
-                },
                 "datasource": "${datasource}",
-                "definition": "label_values(ray_serve_deployment_replica_healthy{application=~\"$Application\",deployment=~\"$Deployment\",}, replica)",
-                "description": null,
-                "error": null,
-                "hide": 0,
-                "includeAll": true,
-                "label": null,
-                "multi": true,
-                "name": "Replica",
-                "options": [],
+                "definition": "label_values(ray_vllm:request_prompt_tokens_sum{}, model_name)",
                 "query": {
-                    "query": "label_values(ray_serve_deployment_replica_healthy{application=~\"$Application\",deployment=~\"$Deployment\",}, replica)",
-                    "refId": "Prometheus-Instance-Variable-Query"
-                },
-                "refresh": 1,
-                "regex": "",
-                "skipUrlSync": false,
-                "sort": 0,
-                "tagValuesQuery": "",
-                "tags": [],
-                "tagsQuery": "",
-                "type": "query",
-                "useTags": false
-            },
-            {
-                "allValue": ".*",
-                "current": {
-                    "selected": true,
-                    "text": [
-                        "All"
-                    ],
-                    "value": [
-                        "$__all"
-                    ]
-                },
-                "datasource": "${datasource}",
-                "definition": "label_values(ray_serve_deployment_request_counter{deployment=~\"$Deployment\",}, route)",
-                "description": null,
-                "error": null,
-                "hide": 0,
-                "includeAll": true,
-                "label": null,
-                "multi": true,
-                "name": "Route",
-                "options": [],
-                "query": {
-                    "query": "label_values(ray_serve_deployment_request_counter{deployment=~\"$Deployment\",}, route)",
-                    "refId": "Prometheus-Instance-Variable-Query"
-                },
-                "refresh": 1,
-                "regex": "",
-                "skipUrlSync": false,
-                "sort": 0,
-                "tagValuesQuery": "",
-                "tags": [],
-                "tagsQuery": "",
-                "type": "query",
-                "useTags": false
-            },
-            {
-                "allValue": ".*",
-                "current": {
-                    "selected": false
-                },
-                "datasource": "${datasource}",
-                "definition": "label_values(ray_node_network_receive_speed{}, ray_io_cluster)",
-                "description": "Filter queries to specific Ray clusters for KubeRay. When ingesting metrics across multiple ray clusters, the ray_io_cluster label should be set per cluster. For KubeRay users, this is done automaticaly with Prometheus PodMonitor.",
-                "error": null,
-                "hide": 0,
-                "includeAll": true,
-                "label": null,
-                "multi": false,
-                "name": "Cluster",
-                "options": [],
-                "query": {
-                    "query": "label_values(ray_node_network_receive_speed{}, ray_io_cluster)",
+                    "query": "label_values(ray_vllm:request_prompt_tokens_sum{}, model_name)",
                     "refId": "StandardVariableQuery"
                 },
                 "refresh": 1,
-                "regex": "",
-                "skipUrlSync": false,
-                "sort": 2,
-                "tagValuesQuery": "",
-                "tags": [],
-                "tagsQuery": "",
+                "includeAll": true,
+                "multi": false,
+                "allValue": ".*",
+                "current": {
+                    "selected": true,
+                    "text": [
+                        "All"
+                    ],
+                    "value": [
+                        "$__all"
+                    ]
+                }
+            },
+            {
+                "name": "workerid",
+                "label": "Worker ID",
                 "type": "query",
-                "useTags": false
+                "hide": 0,
+                "datasource": "${datasource}",
+                "definition": "label_values(ray_vllm:request_prompt_tokens_sum{}, WorkerId)",
+                "query": {
+                    "query": "label_values(ray_vllm:request_prompt_tokens_sum{}, WorkerId)",
+                    "refId": "StandardVariableQuery"
+                },
+                "refresh": 1,
+                "includeAll": true,
+                "multi": false,
+                "allValue": ".*",
+                "current": {
+                    "selected": true,
+                    "text": [
+                        "All"
+                    ],
+                    "value": [
+                        "$__all"
+                    ]
+                }
+            },
+            {
+                "name": "deployment",
+                "label": "Deployment",
+                "type": "query",
+                "hide": 0,
+                "datasource": "${datasource}",
+                "definition": "label_values(ray_serve_deployment_request_counter_total{}, deployment)",
+                "query": {
+                    "query": "label_values(ray_serve_deployment_request_counter_total{}, deployment)",
+                    "refId": "StandardVariableQuery"
+                },
+                "refresh": 1,
+                "includeAll": false,
+                "multi": false,
+                "allValue": ".*",
+                "current": {
+                    "selected": true,
+                    "text": [
+                        "All"
+                    ],
+                    "value": [
+                        "$__all"
+                    ]
+                }
+            },
+            {
+                "name": "interval",
+                "label": "Interval",
+                "type": "custom",
+                "hide": 0,
+                "includeAll": false,
+                "multi": false,
+                "options": [
+                    {
+                        "selected": true,
+                        "text": "30s",
+                        "value": "30s"
+                    },
+                    {
+                        "selected": false,
+                        "text": "1m",
+                        "value": "1m"
+                    },
+                    {
+                        "selected": false,
+                        "text": "5m",
+                        "value": "5m"
+                    },
+                    {
+                        "selected": false,
+                        "text": "10m",
+                        "value": "10m"
+                    },
+                    {
+                        "selected": false,
+                        "text": "15m",
+                        "value": "15m"
+                    }
+                ],
+                "current": {
+                    "selected": true,
+                    "text": "5m",
+                    "value": "5m"
+                }
             }
         ]
     },
@@ -2168,7 +3080,7 @@
     },
     "timepicker": {},
     "timezone": "",
-    "title": "Serve Deployment Dashboard",
-    "uid": "rayServeDeploymentDashboard",
+    "title": "Serve LLM Dashboard",
+    "uid": "rayServeLlmDashboard",
     "version": 1
 }

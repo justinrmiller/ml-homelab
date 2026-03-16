@@ -1,11 +1,13 @@
 """Streamlit app."""
 
+import os
 import shutil
 import socket
 import time
 
 import boto3
 import streamlit as st
+import yaml
 from ray.job_submission import JobStatus, JobSubmissionClient
 
 st.set_page_config(layout="wide")
@@ -38,14 +40,27 @@ def is_ray_running():
 RAY_DASHBOARD_URL = "http://localhost:8265"
 
 
-def wire_job(job_name: str, entrypoint: str, working_dir: str = "./streamlit_app/jobs"):
+def wire_job(
+    job_name: str,
+    entrypoint: str,
+    working_dir: str = "./streamlit_app/jobs",
+    runtime_env_file: str | None = None,
+):
     """Configure a job."""
     if st.button(key=job_name, label=f"▶ Run {job_name} job"):
         client = JobSubmissionClient(address=RAY_DASHBOARD_URL)
+        runtime_env: dict = {"working_dir": working_dir}
+        # Merge pip dependencies from runtime_env.yaml if provided
+        if runtime_env_file:
+            env_path = os.path.join(working_dir, runtime_env_file)
+            if os.path.isfile(env_path):
+                with open(env_path) as f:
+                    extra = yaml.safe_load(f) or {}
+                runtime_env.update(extra)
         with st.spinner("Uploading code & submitting job…"):
             job_id = client.submit_job(
                 entrypoint=entrypoint,
-                runtime_env={"working_dir": working_dir},
+                runtime_env=runtime_env,
             )
         st.success(f"{job_name} submitted: `{job_id}`")
 
@@ -118,9 +133,9 @@ with tabs[0]:
     # Set up S3 client for MinIO
     s3 = boto3.client(
         "s3",
-        endpoint_url="http://localhost:9000",
-        aws_access_key_id="test-key",
-        aws_secret_access_key="test-secret",
+        endpoint_url=os.environ.get("AWS_ENDPOINT_URL_S3", "http://localhost:9000"),
+        aws_access_key_id=os.environ.get("MINIO_ROOT_USER", "minioadmin"),
+        aws_secret_access_key=os.environ.get("MINIO_ROOT_PASSWORD", "minioadmin"),
     )
 
     # List all available buckets
@@ -201,21 +216,26 @@ with tabs[0]:
 
 with tabs[1]:
     training_jobs = [
-        {"job_name": "MNIST Tune", "entrypoint": "python mnist_training/train_mnist.py"}
+        {
+            "job_name": "MNIST Tune",
+            "entrypoint": "python mnist_training/train_mnist.py",
+            "runtime_env_file": "mnist_training/runtime_env.yaml",
+        },
     ]
 
     for job in training_jobs:
         with st.expander(f"Training Job - {job['job_name']}", expanded=False):
-            wire_job(job["job_name"], job["entrypoint"])
+            wire_job(job["job_name"], job["entrypoint"], runtime_env_file=job.get("runtime_env_file"))
 
 with tabs[2]:
     inference_jobs = [
         {
             "job_name": "Resnet Inference",
             "entrypoint": "python resnet_inference/inference.py",
+            "runtime_env_file": "resnet_inference/runtime_env.yaml",
         },
     ]
 
     for job in inference_jobs:
         with st.expander(f"Inference Job - {job['job_name']}", expanded=False):
-            wire_job(job["job_name"], job["entrypoint"])
+            wire_job(job["job_name"], job["entrypoint"], runtime_env_file=job.get("runtime_env_file"))

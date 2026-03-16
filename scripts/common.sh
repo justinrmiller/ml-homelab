@@ -56,21 +56,37 @@ uv_run() {
 detect_container_runtime() {
   if command_exists podman; then
     CONTAINER_RT="podman"
-    # Check compose options: podman-compose (standalone), podman compose (plugin),
-    # or docker-compose (standalone binary — works with podman via DOCKER_HOST)
+    # Prefer podman-compose (standalone) — it talks to Podman natively and
+    # avoids credential-helper issues that plague docker-compose under Podman.
+    # "podman compose" is a wrapper that often delegates to docker-compose
+    # anyway, inheriting all its Docker Desktop baggage.
     if command_exists podman-compose; then
       COMPOSE_CMD="podman-compose"
-    elif podman compose version >/dev/null 2>&1; then
-      COMPOSE_CMD="podman compose"
-    elif command_exists docker-compose; then
-      # Standalone docker-compose binary works with podman's socket
-      COMPOSE_CMD="docker-compose"
-    else
-      echo -e "${RED}No compose tool found for Podman.${NC}"
-      echo -e "${RED}Install one of:${NC}"
-      echo -e "${RED}  - uv tool install podman-compose${NC}"
-      echo -e "${RED}  - brew install docker-compose${NC}"
-      exit 1
+    elif command_exists uv; then
+      echo -e "${YELLOW}Installing podman-compose via uv...${NC}"
+      uv tool install podman-compose >/dev/null 2>&1
+      if command_exists podman-compose; then
+        COMPOSE_CMD="podman-compose"
+      else
+        # uv tool bin might not be in PATH yet
+        _uv_bin="$(uv tool dir 2>/dev/null)/../bin"
+        if [ -x "$_uv_bin/podman-compose" ]; then
+          export PATH="$_uv_bin:$PATH"
+          COMPOSE_CMD="podman-compose"
+        fi
+      fi
+    fi
+    # Fallback if podman-compose install failed
+    if [ -z "$COMPOSE_CMD" ]; then
+      if podman compose version >/dev/null 2>&1; then
+        COMPOSE_CMD="podman compose"
+      elif command_exists docker-compose; then
+        COMPOSE_CMD="docker-compose"
+      else
+        echo -e "${RED}No compose tool found for Podman.${NC}"
+        echo -e "${RED}Install with: uv tool install podman-compose${NC}"
+        exit 1
+      fi
     fi
   elif command_exists docker; then
     CONTAINER_RT="docker"

@@ -90,7 +90,7 @@ helm install kuberay-operator kuberay/kuberay-operator --create-namespace --name
 ### 3. Ray Cluster Deployment
 ```bash
 # For ARM architecture (Apple Silicon)
-helm install raycluster kuberay/ray-cluster --version 1.5.1 --set 'image.tag=2.44.1-aarch64'
+helm install raycluster kuberay/ray-cluster --version 1.5.1 --set 'image.tag=2.54.0-aarch64'
 
 # For x86_64 architecture
 helm install raycluster kuberay/ray-cluster --version 1.5.1
@@ -118,14 +118,14 @@ Configure KubeRay through `.env` file:
 # KubeRay Configuration
 KUBERAY_NAMESPACE=default
 KUBERAY_CLUSTER_NAME=raycluster-kuberay
-KUBERAY_RAY_VERSION=2.44.1
+KUBERAY_RAY_VERSION=2.54.0
 KUBERAY_OPERATOR_VERSION=1.5.1
 KIND_CLUSTER_NAME=kind
 KIND_NODE_IMAGE=kindest/node:v1.35.0
 ```
 
 ### Cluster Specifications
-- **Ray Version**: 2.44.1
+- **Ray Version**: 2.54.0
 - **Kubernetes Version**: 1.35.0
 - **Operator Version**: 1.5.1
 - **Default Namespace**: default
