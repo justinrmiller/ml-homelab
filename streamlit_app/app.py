@@ -6,6 +6,9 @@ import socket
 import time
 
 import boto3
+from dotenv import load_dotenv
+
+load_dotenv()
 import streamlit as st
 import yaml
 from ray.job_submission import JobStatus, JobSubmissionClient
