@@ -9,6 +9,10 @@ import boto3
 from dotenv import load_dotenv
 
 load_dotenv()
+# Prevent Ray auto-connecting via Ray Client protocol (ray://) which requires
+# matching Python versions between client and cluster. JobSubmissionClient uses
+# HTTP instead, so RAY_ADDRESS is not needed here.
+os.environ.pop("RAY_ADDRESS", None)
 import streamlit as st
 import yaml
 from ray.job_submission import JobStatus, JobSubmissionClient
