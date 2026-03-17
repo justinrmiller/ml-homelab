@@ -115,7 +115,7 @@ A local development environment for orchestrating, training, and visualizing mac
 
 - [Docker](https://www.docker.com/) or [Podman](https://podman.io/) (container runtime)
   - When using Podman, `podman-compose` is preferred and will be auto-installed via `uv tool install` if not present
-- [Python](https://python.org/) 3.11+
+- [Python](https://python.org/) 3.12+
 - [uv](https://docs.astral.sh/uv/) (Python package manager)
 
 The following tools will be auto-installed via Homebrew if missing:

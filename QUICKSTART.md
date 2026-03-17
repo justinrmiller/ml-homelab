@@ -5,7 +5,7 @@ Get up and running with KubeRay, MinIO, and metrics monitoring in minutes!
 ## Prerequisites
 
 - Docker or Podman
-- Python 3.11+
+- Python 3.12+
 - [uv](https://docs.astral.sh/uv/) (Python package manager)
 
 The setup script will automatically install Kind, Helm, and kubectl via Homebrew if missing.
