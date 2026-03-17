@@ -1,0 +1,27 @@
+# Prometheus configuration for Ray metrics (KubeRay)
+#
+# Ray metrics are port-forwarded from the KubeRay head pod (port 8080)
+# to localhost on the host machine. Prometheus runs in a container and
+# reaches the host via host.docker.internal (Docker) or
+# host.containers.internal (Podman).
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'ray-cluster-monitor'
+
+scrape_configs:
+  # Ray head metrics — port-forwarded from KubeRay head pod
+  - job_name: 'ray'
+    static_configs:
+      # host.docker.internal works for both Docker Desktop and Podman 4+
+      - targets: ['host.docker.internal:8080']
+        labels:
+          cluster: 'kuberay'
+          component: 'head'
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

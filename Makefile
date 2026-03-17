@@ -1,25 +1,30 @@
-.PHONY: run start stop kuberay-start kuberay-stop kuberay-status
+.PHONY: run start stop status sync job
+
+# Sync Python dependencies
+sync:
+	uv sync
 
 # Start Streamlit app only
 run:
-	streamlit run streamlit_app/app.py
-
-# Start all services (MinIO, Ray, and Streamlit)
-start:
-	scripts/init.sh
-
-# Stop all services
-stop:
-	scripts/stop.sh
+	uv run streamlit run streamlit_app/app.py
 
 # Start KubeRay cluster with all services
-kuberay-start:
+start:
 	scripts/kuberay-init.sh
 
 # Stop KubeRay cluster and all services
-kuberay-stop:
+stop:
 	scripts/kuberay-stop.sh
 
-# Check KubeRay cluster status
-kuberay-status:
+# Check cluster status
+status:
 	scripts/kuberay-status.sh
+
+# Submit a Ray job
+# Usage:
+#   make job SCRIPT=hello_ray_job.py
+#   make job SCRIPT=resnet_inference/inference.py RUNTIME_ENV=resnet_inference/runtime_env.yaml
+RUNTIME_ENV ?=
+_RUNTIME_ENV_FLAG = $(if $(RUNTIME_ENV),--runtime-env $(RUNTIME_ENV),)
+job:
+	uv run ray job submit --address http://localhost:8265 --working-dir . $(_RUNTIME_ENV_FLAG) -- python $(SCRIPT)

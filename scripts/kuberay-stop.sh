@@ -2,12 +2,8 @@
 # KubeRay Shutdown Script
 # This script stops all KubeRay services and cleans up the cluster
 
-# Text formatting
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
-BOLD='\033[1m'
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/common.sh"
 
 echo -e "${RED}${BOLD}=== KubeRay Cluster Shutdown ===${NC}"
 echo -e "Stopping all KubeRay services...\n"
@@ -36,7 +32,9 @@ echo
 
 # Step 2: Stop port forwarding
 echo -e "${YELLOW}Step 2/6: Stopping port forwarding...${NC}"
-# Kill all kubectl port-forward processes
+# Kill the auto-reconnecting port-forward loop and all kubectl port-forward processes
+pkill -f "kuberay-port-forward-loop" 2>/dev/null || true
+rm -f /tmp/kuberay-port-forward-loop.sh
 KUBECTL_PIDS=$(ps aux | grep "kubectl port-forward" | grep -v grep | awk '{print $2}')
 if [ -n "$KUBECTL_PIDS" ]; then
   echo -e "Killing kubectl port-forward processes..."
@@ -57,14 +55,15 @@ if [ -f /tmp/kuberay-port-forward.pid ]; then
 fi
 echo
 
-# Step 3: Stop MinIO
-echo -e "${YELLOW}Step 3/6: Stopping MinIO with Docker Compose...${NC}"
-if docker ps | grep -q "minio"; then
-  echo -e "Shutting down MinIO containers..."
-  docker compose down
-  echo -e "✅ MinIO stopped"
+# Step 3: Stop Compose services
+echo -e "${YELLOW}Step 3/6: Stopping Compose services...${NC}"
+detect_container_runtime
+if $CONTAINER_RT ps | grep -q "minio"; then
+  echo -e "Shutting down containers..."
+  $COMPOSE_CMD down
+  echo -e "✅ Compose services stopped"
 else
-  echo -e "No MinIO containers found to stop"
+  echo -e "No containers found to stop"
 fi
 echo
 
@@ -92,9 +91,9 @@ echo
 
 # Step 6: Delete Kind cluster
 echo -e "${YELLOW}Step 6/6: Deleting Kind cluster...${NC}"
-if kind get clusters | grep -q "kind"; then
+if kind_cmd get clusters | grep -q "kind"; then
   echo -e "Deleting Kind cluster..."
-  kind delete cluster
+  kind_cmd delete cluster
   echo -e "✅ Kind cluster deleted"
 else
   echo -e "No Kind cluster found to delete"
