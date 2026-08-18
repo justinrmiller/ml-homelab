@@ -1,8 +1,8 @@
 # Pre-commit configuration for the ml-homelab Streamlit and Ray application.
 # See https://pre-commit.com for more information.
 #
-# Python tooling (ruff, ty, pytest) runs through `uv run` so the versions used
-# here always match the ones pinned in uv.lock.
+# Python tooling (ruff, ty, pytest) runs through scripts/uv-run.sh so the
+# versions match uv.lock and the environment keeps the right torch extra.
 
 repos:
   # Basic file checks and cleanup
@@ -26,7 +26,7 @@ repos:
       - id: ruff-check
         name: ruff (lint)
         description: Lint and sort imports with ruff
-        entry: uv run ruff check --fix --force-exclude
+        entry: scripts/uv-run.sh ruff check --fix --force-exclude
         language: system
         types_or: [python, pyi]
         require_serial: true
@@ -34,7 +34,7 @@ repos:
       - id: ruff-format
         name: ruff (format)
         description: Format Python code with ruff
-        entry: uv run ruff format --force-exclude
+        entry: scripts/uv-run.sh ruff format --force-exclude
         language: system
         types_or: [python, pyi]
         require_serial: true
@@ -42,7 +42,7 @@ repos:
       - id: ty
         name: ty (type check)
         description: Type check with ty
-        entry: uv run ty check
+        entry: scripts/uv-run.sh ty check
         language: system
         types_or: [python, pyi]
         pass_filenames: false
@@ -51,7 +51,7 @@ repos:
       - id: pytest
         name: pytest (with coverage)
         description: Run the test suite and enforce the coverage floor
-        entry: uv run pytest --cov
+        entry: scripts/uv-run.sh pytest --cov
         language: system
         types_or: [python, pyi]
         pass_filenames: false

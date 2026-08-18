@@ -22,19 +22,19 @@ jobs:
           cache-dependency-glob: uv.lock
 
       - name: Install dependencies
-        run: uv sync --locked
+        run: uv sync --locked --extra cpu
 
       - name: Lint
-        run: uv run ruff check .
+        run: uv run --extra cpu ruff check .
 
       - name: Check formatting
-        run: uv run ruff format --check .
+        run: uv run --extra cpu ruff format --check .
 
       - name: Type check
-        run: uv run ty check
+        run: uv run --extra cpu ty check
 
       - name: Test with coverage
-        run: uv run pytest --cov --cov-report=xml --cov-report=term-missing
+        run: uv run --extra cpu pytest --cov --cov-report=xml --cov-report=term-missing
 
       - name: Upload coverage report
         if: always()

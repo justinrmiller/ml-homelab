@@ -72,3 +72,10 @@ def test_main_reports_what_it_wrote(tmp_path, capsys):
 def test_committed_dashboard_is_valid_json(filename):
     dashboard = json.loads((COMMITTED_DIR / filename).read_text())
     assert dashboard["panels"]
+
+
+@pytest.mark.parametrize("filename", sorted(exporter.DASHBOARDS))
+def test_exported_dashboards_end_with_a_newline(tmp_path, filename):
+    """Otherwise end-of-file-fixer rewrites them right after every export."""
+    exporter.export(tmp_path)
+    assert (tmp_path / filename).read_text().endswith("\n")

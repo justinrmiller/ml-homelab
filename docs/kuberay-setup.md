@@ -118,8 +118,6 @@ Configure KubeRay through `.env` file:
 # KubeRay Configuration
 KUBERAY_NAMESPACE=default
 KUBERAY_CLUSTER_NAME=raycluster-kuberay
-KUBERAY_RAY_VERSION=2.57.0
-KUBERAY_OPERATOR_VERSION=1.6.2
 KIND_CLUSTER_NAME=kind
 KIND_NODE_IMAGE=kindest/node:v1.35.0
 ```

@@ -323,6 +323,34 @@ make check       # everything CI runs
 make hooks       # install the pre-commit and pre-push git hooks
 ```
 
+### PyTorch builds (CPU vs GPU)
+
+`torch` is not in `dependencies`. It lives in two mutually exclusive extras, so
+one `uv.lock` carries both builds:
+
+| extra | on Linux | on macOS |
+| --- | --- | --- |
+| `cpu` | `torch 2.13.0+cpu` from `download.pytorch.org/whl/cpu` | PyPI wheel (CPU/MPS) |
+| `gpu` | `torch 2.13.0+cu129` from `download.pytorch.org/whl/cu129` | PyPI wheel (CPU/MPS) |
+
+Hardware cannot be expressed as a dependency marker, so the choice happens at
+sync time rather than in the lockfile. [`scripts/torch-extra.sh`](scripts/torch-extra.sh)
+probes `nvidia-smi` and prints `gpu` or `cpu`, and the Makefile passes that to
+every uv command:
+
+```sh
+make sync                    # picks the build matching this machine
+make sync TORCH_EXTRA=gpu    # force the CUDA build
+make test TORCH_EXTRA=cpu    # force the CPU build
+```
+
+CI pins `--extra cpu` explicitly, since GitHub runners have no GPU and the CUDA
+wheels add roughly 3 GB.
+
+> **One gotcha:** because torch is an extra, a bare `uv run pytest` syncs an
+> environment *without* it and the tests fail to import. Use `make test`, or
+> [`scripts/uv-run.sh`](scripts/uv-run.sh), or pass `--extra` yourself.
+
 Ray generates its Grafana dashboards from code, so the committed JSON goes
 stale whenever Ray is upgraded. After a version bump, run:
 

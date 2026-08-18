@@ -53,6 +53,10 @@ def export(output_dir: Path = OUTPUT_DIR) -> dict[str, str]:
     uids = {}
     for filename, generate in DASHBOARDS.items():
         content, uid = generate()
+        # Ray emits no trailing newline; add one so end-of-file-fixer does not
+        # rewrite every file the moment it is exported.
+        if not content.endswith("\n"):
+            content += "\n"
         (output_dir / filename).write_text(content)
         uids[filename] = uid
     return uids

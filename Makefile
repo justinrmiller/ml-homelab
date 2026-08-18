@@ -1,12 +1,17 @@
 .PHONY: run start stop status sync job test cov lint format typecheck check hooks dashboards
 
+# torch ships as two mutually exclusive extras (cpu/gpu); this picks the one
+# matching the machine. Override with `make test TORCH_EXTRA=gpu`.
+TORCH_EXTRA ?= $(shell scripts/torch-extra.sh)
+UV_RUN = scripts/uv-run.sh
+
 # Sync Python dependencies
 sync:
-	uv sync
+	uv sync --extra $(TORCH_EXTRA)
 
 # Start Streamlit app only
 run:
-	uv run streamlit run streamlit_app/app.py
+	$(UV_RUN) streamlit run streamlit_app/app.py
 
 # Start KubeRay cluster with all services
 start:
@@ -22,36 +27,36 @@ status:
 
 # Run the test suite
 test:
-	uv run pytest
+	$(UV_RUN) pytest
 
 # Run the test suite with coverage (fails below the floor in pyproject.toml)
 cov:
-	uv run pytest --cov --cov-report=term-missing --cov-report=html
+	$(UV_RUN) pytest --cov --cov-report=term-missing --cov-report=html
 
 # Lint with ruff
 lint:
-	uv run ruff check .
+	$(UV_RUN) ruff check .
 
 # Format with ruff
 format:
-	uv run ruff check --fix .
-	uv run ruff format .
+	$(UV_RUN) ruff check --fix .
+	$(UV_RUN) ruff format .
 
 # Type check with ty
 typecheck:
-	uv run ty check
+	$(UV_RUN) ty check
 
 # Everything CI runs
 check: lint typecheck cov
 
 # Re-export Ray's Grafana dashboards (run after bumping the Ray version)
 dashboards:
-	uv run python scripts/export_grafana_dashboards.py
+	$(UV_RUN) python scripts/export_grafana_dashboards.py
 
 # Install the git hooks
 hooks:
-	uv run pre-commit install
-	uv run pre-commit install --hook-type pre-push
+	$(UV_RUN) pre-commit install
+	$(UV_RUN) pre-commit install --hook-type pre-push
 
 # Submit a Ray job
 # Usage:
@@ -60,4 +65,4 @@ hooks:
 RUNTIME_ENV ?=
 _RUNTIME_ENV_FLAG = $(if $(RUNTIME_ENV),--runtime-env $(RUNTIME_ENV),)
 job:
-	uv run ray job submit --address http://localhost:8265 --working-dir . $(_RUNTIME_ENV_FLAG) -- python $(SCRIPT)
+	$(UV_RUN) ray job submit --address http://localhost:8265 --working-dir . $(_RUNTIME_ENV_FLAG) -- python $(SCRIPT)

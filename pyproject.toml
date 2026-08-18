@@ -9,10 +9,15 @@ dependencies = [
     "python-dotenv>=1.2.2",
     "ray[default]==2.57.0",
     "streamlit==1.61.1",
-    "torch>=2.13.0",
-    "torchvision>=0.28.0",
     "transformers>=5.15.0",
 ]
+
+# torch lives in a mutually exclusive extra rather than in `dependencies`, so
+# one lockfile can carry both the CPU and the CUDA build. Pick one at sync
+# time; `make sync` detects which. See "PyTorch builds" in the README.
+[project.optional-dependencies]
+cpu = ["torch>=2.13.0", "torchvision>=0.28.0"]
+gpu = ["torch>=2.13.0", "torchvision>=0.28.0"]
 
 [dependency-groups]
 dev = [
@@ -26,18 +31,31 @@ dev = [
 [project.scripts]
 app = "streamlit.web.cli:main"
 
-# The homelab runs on Apple Silicon, where torch is CPU-only anyway, and Ray
-# cluster jobs install their own torch via runtime_env. Pulling the default
-# Linux wheels would drag in ~3 GB of CUDA libraries for CI and for anyone
-# working on this from a Linux box. Drop this block to get GPU wheels back.
+[tool.uv]
+# uv refuses to resolve both at once, which is what keeps them separable.
+conflicts = [[{ extra = "cpu" }, { extra = "gpu" }]]
+
 [[tool.uv.index]]
 name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"
 explicit = true
 
+[[tool.uv.index]]
+name = "pytorch-cu129"
+url = "https://download.pytorch.org/whl/cu129"
+explicit = true
+
+# Linux only: macOS wheels live on PyPI and are CPU/MPS either way, so both
+# extras fall through to the default index there.
 [tool.uv.sources]
-torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
-torchvision = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+torch = [
+    { index = "pytorch-cpu", extra = "cpu", marker = "sys_platform == 'linux'" },
+    { index = "pytorch-cu129", extra = "gpu", marker = "sys_platform == 'linux'" },
+]
+torchvision = [
+    { index = "pytorch-cpu", extra = "cpu", marker = "sys_platform == 'linux'" },
+    { index = "pytorch-cu129", extra = "gpu", marker = "sys_platform == 'linux'" },
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
