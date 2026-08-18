@@ -101,6 +101,18 @@
                     "color": "#777777",
                     "fill": 0,
                     "stack": false
+                },
+                {
+                    "alias": "/Container/",
+                    "hiddenSeries": true
+                },
+                {
+                    "alias": "Container MAX",
+                    "dashes": true,
+                    "color": "#73BF69",
+                    "fill": 0,
+                    "stack": false,
+                    "hiddenSeries": true
                 }
             ],
             "spaceLength": 10,
@@ -229,6 +241,18 @@
                     "color": "#777777",
                     "fill": 0,
                     "stack": false
+                },
+                {
+                    "alias": "/Container/",
+                    "hiddenSeries": true
+                },
+                {
+                    "alias": "Container MAX",
+                    "dashes": true,
+                    "color": "#73BF69",
+                    "fill": 0,
+                    "stack": false,
+                    "hiddenSeries": true
                 }
             ],
             "spaceLength": 10,
@@ -357,6 +381,18 @@
                     "color": "#777777",
                     "fill": 0,
                     "stack": false
+                },
+                {
+                    "alias": "/Container/",
+                    "hiddenSeries": true
+                },
+                {
+                    "alias": "Container MAX",
+                    "dashes": true,
+                    "color": "#73BF69",
+                    "fill": 0,
+                    "stack": false,
+                    "hiddenSeries": true
                 }
             ],
             "spaceLength": 10,
@@ -485,6 +521,18 @@
                     "color": "#777777",
                     "fill": 0,
                     "stack": false
+                },
+                {
+                    "alias": "/Container/",
+                    "hiddenSeries": true
+                },
+                {
+                    "alias": "Container MAX",
+                    "dashes": true,
+                    "color": "#73BF69",
+                    "fill": 0,
+                    "stack": false,
+                    "hiddenSeries": true
                 }
             ],
             "spaceLength": 10,
@@ -549,7 +597,7 @@
             "dashLength": 10,
             "dashes": false,
             "datasource": "${datasource}",
-            "description": "Tracks the current number of tasks actively running across operators. Provides insight into the degree of parallelism currently utilized for data processing.",
+            "description": "Tracks the current number of tasks that have been submitted and have not completed (pending or running) across operators. Provides insight into the degree of parallelism currently utilized for data processing.",
             "fieldConfig": {
                 "defaults": {
                     "unit": "tasks"
@@ -613,6 +661,18 @@
                     "color": "#777777",
                     "fill": 0,
                     "stack": false
+                },
+                {
+                    "alias": "/Container/",
+                    "hiddenSeries": true
+                },
+                {
+                    "alias": "Container MAX",
+                    "dashes": true,
+                    "color": "#73BF69",
+                    "fill": 0,
+                    "stack": false,
+                    "hiddenSeries": true
                 }
             ],
             "spaceLength": 10,
@@ -623,7 +683,7 @@
                     "exemplar": true,
                     "expr": "sum(ray_data_num_tasks_running{dataset=~\"$DatasetID\",SessionName=~\"$SessionName\",ray_io_cluster=~\"$Cluster\", operator=~\"$Operator\"}) by (dataset, operator)",
                     "interval": "",
-                    "legendFormat": "Running Tasks: {{dataset}}, {{operator}}",
+                    "legendFormat": "Active Tasks: {{dataset}}, {{operator}}",
                     "queryType": "randomWalk",
                     "refId": "A"
                 }
@@ -632,7 +692,7 @@
             "timeFrom": null,
             "timeRegions": [],
             "timeShift": null,
-            "title": "Running Tasks",
+            "title": "Active Tasks",
             "tooltip": {
                 "shared": true,
                 "sort": 0,
@@ -741,6 +801,18 @@
                     "color": "#777777",
                     "fill": 0,
                     "stack": false
+                },
+                {
+                    "alias": "/Container/",
+                    "hiddenSeries": true
+                },
+                {
+                    "alias": "Container MAX",
+                    "dashes": true,
+                    "color": "#73BF69",
+                    "fill": 0,
+                    "stack": false,
+                    "hiddenSeries": true
                 }
             ],
             "spaceLength": 10,
@@ -869,6 +941,18 @@
                     "color": "#777777",
                     "fill": 0,
                     "stack": false
+                },
+                {
+                    "alias": "/Container/",
+                    "hiddenSeries": true
+                },
+                {
+                    "alias": "Container MAX",
+                    "dashes": true,
+                    "color": "#73BF69",
+                    "fill": 0,
+                    "stack": false,
+                    "hiddenSeries": true
                 }
             ],
             "spaceLength": 10,
@@ -1009,6 +1093,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -1137,6 +1233,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -1265,6 +1373,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -1393,6 +1513,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -1521,6 +1653,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -1663,6 +1807,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -1791,6 +1947,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -1919,6 +2087,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -2047,6 +2227,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -2175,6 +2367,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -2317,6 +2521,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -2445,6 +2661,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -2573,6 +2801,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -2701,6 +2941,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -2829,6 +3081,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -2971,6 +3235,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -3099,6 +3375,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -3227,6 +3515,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -3355,6 +3655,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -3483,6 +3795,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -3611,6 +3935,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -3739,6 +4075,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -3867,6 +4215,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -3995,6 +4355,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -4123,6 +4495,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -4251,6 +4635,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -4379,6 +4775,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -4507,6 +4915,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -4635,6 +5055,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -4763,6 +5195,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -4905,6 +5349,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -5033,6 +5489,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -5161,6 +5629,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -5289,6 +5769,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -5417,6 +5909,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -5545,6 +6049,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -5673,6 +6189,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -5801,6 +6329,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -5929,6 +6469,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -6057,6 +6609,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -6185,6 +6749,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -6313,6 +6889,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -6441,6 +7029,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -6569,6 +7169,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -6711,6 +7323,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -6839,6 +7463,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -6967,6 +7603,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -7095,6 +7743,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -7223,6 +7883,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -7351,6 +8023,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -7479,6 +8163,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -7607,6 +8303,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -7735,6 +8443,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -7863,6 +8583,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -8005,6 +8737,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -8147,6 +8891,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -8283,6 +9039,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -8355,7 +9123,7 @@
                     "dashLength": 10,
                     "dashes": false,
                     "datasource": "${datasource}",
-                    "description": "Average cluster object store memory utilization percentage used by Ray Data. When utilization exceeds the scaling threshold (default 75%), the cluster autoscaler may request additional resources.",
+                    "description": "Average cluster memory utilization percentage used by Ray Data. When utilization exceeds the scaling threshold (default 75%), the cluster autoscaler may request additional resources.",
                     "fieldConfig": {
                         "defaults": {
                             "unit": "percent"
@@ -8366,6 +9134,154 @@
                         "h": 8,
                         "w": 12,
                         "x": 0,
+                        "y": 289
+                    },
+                    "fill": 0,
+                    "fillGradient": 0,
+                    "hiddenSeries": false,
+                    "id": 125,
+                    "legend": {
+                        "alignAsTable": true,
+                        "avg": true,
+                        "current": true,
+                        "hideEmpty": false,
+                        "hideZero": true,
+                        "max": true,
+                        "min": false,
+                        "rightSide": false,
+                        "show": true,
+                        "sort": "current",
+                        "sortDesc": true,
+                        "total": false,
+                        "values": true
+                    },
+                    "lines": true,
+                    "linewidth": 1,
+                    "nullPointMode": null,
+                    "options": {
+                        "alertThreshold": true
+                    },
+                    "percentage": false,
+                    "pluginVersion": "7.5.17",
+                    "pointradius": 2,
+                    "points": false,
+                    "renderer": "flot",
+                    "seriesOverrides": [
+                        {
+                            "$$hashKey": "object:2987",
+                            "alias": "MAX",
+                            "dashes": true,
+                            "color": "#1F60C4",
+                            "fill": 0,
+                            "stack": false
+                        },
+                        {
+                            "$$hashKey": "object:78",
+                            "alias": "/FINISHED|FAILED|DEAD|REMOVED|Failed Nodes:/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "$$hashKey": "object:2987",
+                            "alias": "MAX + PENDING",
+                            "dashes": true,
+                            "color": "#777777",
+                            "fill": 0,
+                            "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
+                        }
+                    ],
+                    "spaceLength": 10,
+                    "stack": false,
+                    "steppedLine": false,
+                    "targets": [
+                        {
+                            "exemplar": true,
+                            "expr": "sum(ray_data_cluster_mem_utilization{dataset=~\"$DatasetID\",SessionName=~\"$SessionName\",ray_io_cluster=~\"$Cluster\"}) by (dataset)",
+                            "interval": "",
+                            "legendFormat": "Memory Utilization %: {{dataset}}",
+                            "queryType": "randomWalk",
+                            "refId": "A"
+                        },
+                        {
+                            "exemplar": true,
+                            "expr": "75",
+                            "interval": "",
+                            "legendFormat": "MAX",
+                            "queryType": "randomWalk",
+                            "refId": "B"
+                        }
+                    ],
+                    "thresholds": [],
+                    "timeFrom": null,
+                    "timeRegions": [],
+                    "timeShift": null,
+                    "title": "Cluster utilization % (Memory)",
+                    "tooltip": {
+                        "shared": true,
+                        "sort": 0,
+                        "value_type": "individual"
+                    },
+                    "type": "graph",
+                    "xaxis": {
+                        "buckets": null,
+                        "mode": "time",
+                        "name": null,
+                        "show": true,
+                        "values": []
+                    },
+                    "yaxes": [
+                        {
+                            "$$hashKey": "object:628",
+                            "format": "percent",
+                            "label": "",
+                            "logBase": 1,
+                            "max": null,
+                            "min": "0",
+                            "show": true
+                        },
+                        {
+                            "$$hashKey": "object:629",
+                            "format": "short",
+                            "label": null,
+                            "logBase": 1,
+                            "max": null,
+                            "min": null,
+                            "show": true
+                        }
+                    ],
+                    "yaxis": {
+                        "align": false,
+                        "alignLevel": null
+                    }
+                },
+                {
+                    "aliasColors": {},
+                    "bars": false,
+                    "dashLength": 10,
+                    "dashes": false,
+                    "datasource": "${datasource}",
+                    "description": "Average cluster object store memory utilization percentage used by Ray Data. When utilization exceeds the scaling threshold (default 75%), the cluster autoscaler may request additional resources.",
+                    "fieldConfig": {
+                        "defaults": {
+                            "unit": "percent"
+                        },
+                        "overrides": []
+                    },
+                    "gridPos": {
+                        "h": 8,
+                        "w": 12,
+                        "x": 12,
                         "y": 289
                     },
                     "fill": 0,
@@ -8419,6 +9335,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -8569,6 +9497,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -8577,9 +9517,9 @@
                     "targets": [
                         {
                             "exemplar": true,
-                            "expr": "sum(ray_data_iter_initialize_seconds{dataset=~\"$DatasetID\",SessionName=~\"$SessionName\",ray_io_cluster=~\"$Cluster\"}) by (dataset)",
+                            "expr": "sum(ray_data_iter_initialize_seconds{dataset=~\"$DatasetID\",SessionName=~\"$SessionName\",ray_io_cluster=~\"$Cluster\"}) by (dataset, split)",
                             "interval": "",
-                            "legendFormat": "Seconds: {{dataset}}, {{operator}}",
+                            "legendFormat": "Seconds: {{dataset}}, {{split}}",
                             "queryType": "randomWalk",
                             "refId": "A"
                         }
@@ -8697,6 +9637,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -8705,9 +9657,9 @@
                     "targets": [
                         {
                             "exemplar": true,
-                            "expr": "sum(ray_data_iter_total_blocked_seconds{dataset=~\"$DatasetID\",SessionName=~\"$SessionName\",ray_io_cluster=~\"$Cluster\"}) by (dataset)",
+                            "expr": "sum(ray_data_iter_total_blocked_seconds{dataset=~\"$DatasetID\",SessionName=~\"$SessionName\",ray_io_cluster=~\"$Cluster\"}) by (dataset, split)",
                             "interval": "",
-                            "legendFormat": "Seconds: {{dataset}}",
+                            "legendFormat": "Seconds: {{dataset}}, {{split}}",
                             "queryType": "randomWalk",
                             "refId": "A"
                         }
@@ -8825,6 +9777,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -8833,9 +9797,9 @@
                     "targets": [
                         {
                             "exemplar": true,
-                            "expr": "sum(ray_data_iter_user_seconds{dataset=~\"$DatasetID\",SessionName=~\"$SessionName\",ray_io_cluster=~\"$Cluster\"}) by (dataset)",
+                            "expr": "sum(ray_data_iter_user_seconds{dataset=~\"$DatasetID\",SessionName=~\"$SessionName\",ray_io_cluster=~\"$Cluster\"}) by (dataset, split)",
                             "interval": "",
-                            "legendFormat": "Seconds: {{dataset}}",
+                            "legendFormat": "Seconds: {{dataset}}, {{split}}",
                             "queryType": "randomWalk",
                             "refId": "A"
                         }
@@ -8953,6 +9917,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -8961,9 +9937,9 @@
                     "targets": [
                         {
                             "exemplar": true,
-                            "expr": "sum(ray_data_iter_get_seconds{dataset=~\"$DatasetID\",SessionName=~\"$SessionName\",ray_io_cluster=~\"$Cluster\"}) by (dataset)",
+                            "expr": "sum(ray_data_iter_get_seconds{dataset=~\"$DatasetID\",SessionName=~\"$SessionName\",ray_io_cluster=~\"$Cluster\"}) by (dataset, split)",
                             "interval": "",
-                            "legendFormat": "Seconds: {{dataset}}",
+                            "legendFormat": "Seconds: {{dataset}}, {{split}}",
                             "queryType": "randomWalk",
                             "refId": "A"
                         }
@@ -9081,6 +10057,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -9089,9 +10077,9 @@
                     "targets": [
                         {
                             "exemplar": true,
-                            "expr": "sum(ray_data_iter_next_batch_seconds{dataset=~\"$DatasetID\",SessionName=~\"$SessionName\",ray_io_cluster=~\"$Cluster\"}) by (dataset)",
+                            "expr": "sum(ray_data_iter_next_batch_seconds{dataset=~\"$DatasetID\",SessionName=~\"$SessionName\",ray_io_cluster=~\"$Cluster\"}) by (dataset, split)",
                             "interval": "",
-                            "legendFormat": "Seconds: {{dataset}}",
+                            "legendFormat": "Seconds: {{dataset}}, {{split}}",
                             "queryType": "randomWalk",
                             "refId": "A"
                         }
@@ -9209,6 +10197,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -9217,9 +10217,9 @@
                     "targets": [
                         {
                             "exemplar": true,
-                            "expr": "sum(ray_data_iter_format_batch_seconds{dataset=~\"$DatasetID\",SessionName=~\"$SessionName\",ray_io_cluster=~\"$Cluster\"}) by (dataset)",
+                            "expr": "sum(ray_data_iter_format_batch_seconds{dataset=~\"$DatasetID\",SessionName=~\"$SessionName\",ray_io_cluster=~\"$Cluster\"}) by (dataset, split)",
                             "interval": "",
-                            "legendFormat": "Seconds: {{dataset}}",
+                            "legendFormat": "Seconds: {{dataset}}, {{split}}",
                             "queryType": "randomWalk",
                             "refId": "A"
                         }
@@ -9337,6 +10337,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -9345,9 +10357,9 @@
                     "targets": [
                         {
                             "exemplar": true,
-                            "expr": "sum(ray_data_iter_collate_batch_seconds{dataset=~\"$DatasetID\",SessionName=~\"$SessionName\",ray_io_cluster=~\"$Cluster\"}) by (dataset)",
+                            "expr": "sum(ray_data_iter_collate_batch_seconds{dataset=~\"$DatasetID\",SessionName=~\"$SessionName\",ray_io_cluster=~\"$Cluster\"}) by (dataset, split)",
                             "interval": "",
-                            "legendFormat": "Seconds: {{dataset}}",
+                            "legendFormat": "Seconds: {{dataset}}, {{split}}",
                             "queryType": "randomWalk",
                             "refId": "A"
                         }
@@ -9465,6 +10477,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -9473,9 +10497,9 @@
                     "targets": [
                         {
                             "exemplar": true,
-                            "expr": "sum(ray_data_iter_finalize_batch_seconds{dataset=~\"$DatasetID\",SessionName=~\"$SessionName\",ray_io_cluster=~\"$Cluster\"}) by (dataset)",
+                            "expr": "sum(ray_data_iter_finalize_batch_seconds{dataset=~\"$DatasetID\",SessionName=~\"$SessionName\",ray_io_cluster=~\"$Cluster\"}) by (dataset, split)",
                             "interval": "",
-                            "legendFormat": "Seconds: {{dataset}}",
+                            "legendFormat": "Seconds: {{dataset}}, {{split}}",
                             "queryType": "randomWalk",
                             "refId": "A"
                         }
@@ -9593,6 +10617,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -9601,9 +10637,9 @@
                     "targets": [
                         {
                             "exemplar": true,
-                            "expr": "sum(ray_data_iter_blocks_local{dataset=~\"$DatasetID\",SessionName=~\"$SessionName\",ray_io_cluster=~\"$Cluster\"}) by (dataset)",
+                            "expr": "sum(ray_data_iter_blocks_local{dataset=~\"$DatasetID\",SessionName=~\"$SessionName\",ray_io_cluster=~\"$Cluster\"}) by (dataset, split)",
                             "interval": "",
-                            "legendFormat": "Blocks: {{dataset}}",
+                            "legendFormat": "Blocks: {{dataset}}, {{split}}",
                             "queryType": "randomWalk",
                             "refId": "A"
                         }
@@ -9721,6 +10757,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -9729,9 +10777,9 @@
                     "targets": [
                         {
                             "exemplar": true,
-                            "expr": "sum(ray_data_iter_blocks_remote{dataset=~\"$DatasetID\",SessionName=~\"$SessionName\",ray_io_cluster=~\"$Cluster\"}) by (dataset)",
+                            "expr": "sum(ray_data_iter_blocks_remote{dataset=~\"$DatasetID\",SessionName=~\"$SessionName\",ray_io_cluster=~\"$Cluster\"}) by (dataset, split)",
                             "interval": "",
-                            "legendFormat": "Blocks: {{dataset}}",
+                            "legendFormat": "Blocks: {{dataset}}, {{split}}",
                             "queryType": "randomWalk",
                             "refId": "A"
                         }
@@ -9849,6 +10897,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -9857,9 +10917,9 @@
                     "targets": [
                         {
                             "exemplar": true,
-                            "expr": "sum(ray_data_iter_unknown_location{dataset=~\"$DatasetID\",SessionName=~\"$SessionName\",ray_io_cluster=~\"$Cluster\"}) by (dataset)",
+                            "expr": "sum(ray_data_iter_unknown_location{dataset=~\"$DatasetID\",SessionName=~\"$SessionName\",ray_io_cluster=~\"$Cluster\"}) by (dataset, split)",
                             "interval": "",
-                            "legendFormat": "Blocks: {{dataset}}",
+                            "legendFormat": "Blocks: {{dataset}}, {{split}}",
                             "queryType": "randomWalk",
                             "refId": "A"
                         }
@@ -9977,6 +11037,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -9985,9 +11057,9 @@
                     "targets": [
                         {
                             "exemplar": true,
-                            "expr": "sum(ray_data_iter_prefetched_bytes{dataset=~\"$DatasetID\",SessionName=~\"$SessionName\",ray_io_cluster=~\"$Cluster\"}) by (dataset)",
+                            "expr": "sum(ray_data_iter_prefetched_bytes{dataset=~\"$DatasetID\",SessionName=~\"$SessionName\",ray_io_cluster=~\"$Cluster\"}) by (dataset, split)",
                             "interval": "",
-                            "legendFormat": "Prefetched Bytes: {{dataset}}",
+                            "legendFormat": "Prefetched Bytes: {{dataset}}, {{split}}",
                             "queryType": "randomWalk",
                             "refId": "A"
                         }
@@ -10105,6 +11177,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -10113,9 +11197,9 @@
                     "targets": [
                         {
                             "exemplar": true,
-                            "expr": "sum(ray_data_iter_time_to_first_batch_seconds{dataset=~\"$DatasetID\",SessionName=~\"$SessionName\",ray_io_cluster=~\"$Cluster\"}) by (dataset)",
+                            "expr": "sum(ray_data_iter_time_to_first_batch_seconds{dataset=~\"$DatasetID\",SessionName=~\"$SessionName\",ray_io_cluster=~\"$Cluster\"}) by (dataset, split)",
                             "interval": "",
-                            "legendFormat": "Seconds: {{dataset}}",
+                            "legendFormat": "Seconds: {{dataset}}, {{split}}",
                             "queryType": "randomWalk",
                             "refId": "A"
                         }
@@ -10233,6 +11317,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -10241,9 +11337,9 @@
                     "targets": [
                         {
                             "exemplar": true,
-                            "expr": "sum(ray_data_iter_get_ref_bundles_seconds{dataset=~\"$DatasetID\",SessionName=~\"$SessionName\",ray_io_cluster=~\"$Cluster\"}) by (dataset)",
+                            "expr": "sum(ray_data_iter_get_ref_bundles_seconds{dataset=~\"$DatasetID\",SessionName=~\"$SessionName\",ray_io_cluster=~\"$Cluster\"}) by (dataset, split)",
                             "interval": "",
-                            "legendFormat": "Seconds: {{dataset}}",
+                            "legendFormat": "Seconds: {{dataset}}, {{split}}",
                             "queryType": "randomWalk",
                             "refId": "A"
                         }
@@ -10375,6 +11471,18 @@
                             "color": "#777777",
                             "fill": 0,
                             "stack": false
+                        },
+                        {
+                            "alias": "/Container/",
+                            "hiddenSeries": true
+                        },
+                        {
+                            "alias": "Container MAX",
+                            "dashes": true,
+                            "color": "#73BF69",
+                            "fill": 0,
+                            "stack": false,
+                            "hiddenSeries": true
                         }
                     ],
                     "spaceLength": 10,
@@ -10904,7 +12012,7 @@
     "schemaVersion": 27,
     "style": "dark",
     "tags": [
-        "rayVersion:2.54.0"
+        "rayVersion:2.57.0"
     ],
     "templating": {
         "list": [
@@ -10965,7 +12073,7 @@
                     ]
                 },
                 "datasource": "${datasource}",
-                "definition": "query_result(count by (dataset)(last_over_time(ray_data_output_bytes{SessionName=~\"$SessionName\",}[$__range])))",
+                "definition": "query_result(count by (dataset)(last_over_time(ray_data_output_bytes{SessionName=~\"$SessionName\"}[$__range])))",
                 "description": null,
                 "error": null,
                 "hide": 0,
@@ -10975,7 +12083,7 @@
                 "name": "DatasetID",
                 "options": [],
                 "query": {
-                    "query": "query_result(count by (dataset)(last_over_time(ray_data_output_bytes{SessionName=~\"$SessionName\",}[$__range])))",
+                    "query": "query_result(count by (dataset)(last_over_time(ray_data_output_bytes{SessionName=~\"$SessionName\"}[$__range])))",
                     "refId": "Prometheus-Dataset-Variable-Query"
                 },
                 "refresh": 2,
@@ -11000,7 +12108,7 @@
                     ]
                 },
                 "datasource": "${datasource}",
-                "definition": "query_result(count by (operator)(last_over_time(ray_data_output_bytes{SessionName=~\"$SessionName\",}[$__range])))",
+                "definition": "query_result(count by (operator)(last_over_time(ray_data_output_bytes{SessionName=~\"$SessionName\"}[$__range])))",
                 "description": null,
                 "error": null,
                 "hide": 0,
@@ -11010,7 +12118,7 @@
                 "name": "Operator",
                 "options": [],
                 "query": {
-                    "query": "query_result(count by (operator)(last_over_time(ray_data_output_bytes{SessionName=~\"$SessionName\",}[$__range])))",
+                    "query": "query_result(count by (operator)(last_over_time(ray_data_output_bytes{SessionName=~\"$SessionName\"}[$__range])))",
                     "refId": "Prometheus-Dataset-Variable-Query"
                 },
                 "refresh": 2,
@@ -11030,7 +12138,7 @@
                 },
                 "datasource": "${datasource}",
                 "definition": "label_values(ray_node_network_receive_speed{}, ray_io_cluster)",
-                "description": "Filter queries to specific Ray clusters for KubeRay. When ingesting metrics across multiple ray clusters, the ray_io_cluster label should be set per cluster. For KubeRay users, this is done automaticaly with Prometheus PodMonitor.",
+                "description": "Filter queries to specific Ray clusters for KubeRay. When ingesting metrics across multiple ray clusters, the ray_io_cluster label should be set per cluster. For KubeRay users, this is done automatically with Prometheus PodMonitor.",
                 "error": null,
                 "hide": 0,
                 "includeAll": true,

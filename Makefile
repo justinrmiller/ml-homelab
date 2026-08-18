@@ -1,4 +1,4 @@
-.PHONY: run start stop status sync job test cov lint format typecheck check hooks
+.PHONY: run start stop status sync job test cov lint format typecheck check hooks dashboards
 
 # Sync Python dependencies
 sync:
@@ -43,6 +43,10 @@ typecheck:
 
 # Everything CI runs
 check: lint typecheck cov
+
+# Re-export Ray's Grafana dashboards (run after bumping the Ray version)
+dashboards:
+	uv run python scripts/export_grafana_dashboards.py
 
 # Install the git hooks
 hooks:

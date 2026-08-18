@@ -50,7 +50,7 @@ filterwarnings = [
 
 [tool.coverage.run]
 branch = true
-source = ["streamlit_app", "examples"]
+source = ["streamlit_app", "examples", "scripts"]
 omit = ["*/__init__.py"]
 
 [tool.coverage.report]
@@ -69,7 +69,7 @@ python-version = "3.12"
 python = ".venv"
 
 [tool.ty.src]
-include = ["streamlit_app", "examples", "tests"]
+include = ["streamlit_app", "examples", "scripts", "tests"]
 
 [tool.ruff]
 line-length = 88

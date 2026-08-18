@@ -20,7 +20,7 @@ A local development environment for orchestrating, training, and visualizing mac
 │       └── provisioning/
 │           ├── dashboards/
 │           │   ├── ray-dashboards.yml
-│           │   └── json/        # Ray Grafana dashboards (6 dashboards)
+│           │   └── json/        # Ray 2.57.0 Grafana dashboards (8, generated)
 │           └── datasources/
 │               └── prometheus.yml
 ├── helm/                        # Helm chart values
@@ -106,7 +106,9 @@ A local development environment for orchestrating, training, and visualizing mac
 - **Configured in:** [`docker-compose.yaml`](docker-compose.yaml)
 - **Features:**
   - Pre-configured Prometheus datasource
-  - 6 pre-built Ray dashboards (Default, Data, Serve, Serve Deployment, Serve LLM, Train)
+  - 8 pre-built Ray 2.57.0 dashboards (Default, Data, Data LLM, Serve,
+    Serve Deployment, Serve LLM, Serve LLM SGLang, Train), exported with
+    `make dashboards`
   - Customizable dashboards and alerts
 - **Port:** 3000
 - **Default credentials:** admin/admin
@@ -292,7 +294,7 @@ Prometheus scrapes metrics from Ray every 15 seconds and stores them for histori
 #### Grafana
 Grafana provides visual dashboards for Ray metrics at http://localhost:3000/ (admin/admin). Features include:
 - Pre-configured Prometheus datasource
-- 6 pre-built Ray dashboards: Default, Data, Serve, Serve Deployment, Serve LLM, Train
+- 8 pre-built Ray 2.57.0 dashboards: Default, Data, Data LLM, Serve, Serve Deployment, Serve LLM, Serve LLM SGLang, Train
 - Customizable panels and alerts
 
 ### Streamlit Dashboard
@@ -320,6 +322,16 @@ make typecheck   # ty check
 make check       # everything CI runs
 make hooks       # install the pre-commit and pre-push git hooks
 ```
+
+Ray generates its Grafana dashboards from code, so the committed JSON goes
+stale whenever Ray is upgraded. After a version bump, run:
+
+```sh
+make dashboards
+```
+
+A test asserts the committed dashboards match the installed Ray version, so
+CI fails rather than letting them drift.
 
 Coverage is configured in `pyproject.toml` and fails below **95%**. The suite
 covers the health checks, the S3 helpers, runtime-environment assembly and job
