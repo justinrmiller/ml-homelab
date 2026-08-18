@@ -55,7 +55,9 @@ omit = ["*/__init__.py"]
 
 [tool.coverage.report]
 show_missing = true
-skip_covered = true
+# Every measured file stays in the table. Hiding the fully-covered ones makes
+# the CI log look like coverage only ran against whichever file is failing.
+skip_covered = false
 fail_under = 95
 exclude_also = [
     "if __name__ == .__main__.:",
