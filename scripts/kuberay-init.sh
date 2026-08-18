@@ -116,22 +116,23 @@ echo
 
 # Step 3: Install KubeRay operator
 echo -e "${YELLOW}Step 3/7: Installing KubeRay operator...${NC}"
+# Keep KUBERAY_CHART_VERSION in sync with the ray-cluster chart version below.
+KUBERAY_CHART_VERSION="1.6.2"
+
 echo -e "Adding KubeRay Helm repository..."
 helm repo add kuberay https://ray-project.github.io/kuberay-helm/
 helm repo update
 
-echo -e "Checking if KubeRay operator is already installed..."
-if helm list -n kuberay-system | grep -q "kuberay-operator"; then
-  echo -e "KubeRay operator already exists"
+# `upgrade --install` rather than skipping when present: an operator left at an
+# older chart version would otherwise keep running against a newer Ray cluster.
+echo -e "Installing/upgrading KubeRay operator to ${KUBERAY_CHART_VERSION}..."
+if helm upgrade --install kuberay-operator kuberay/kuberay-operator \
+  --version "$KUBERAY_CHART_VERSION" \
+  --create-namespace --namespace kuberay-system; then
+  echo -e "✅ KubeRay operator at ${KUBERAY_CHART_VERSION}"
 else
-  echo -e "Installing KubeRay operator..."
-  helm install kuberay-operator kuberay/kuberay-operator --create-namespace --namespace kuberay-system
-  if [ $? -eq 0 ]; then
-    echo -e "✅ KubeRay operator installed successfully"
-  else
-    echo -e "❌ Failed to install KubeRay operator"
-    exit 1
-  fi
+  echo -e "❌ Failed to install KubeRay operator"
+  exit 1
 fi
 echo
 
@@ -249,9 +250,9 @@ else
 fi
 
 if [ "$ARCH" = "aarch64" ]; then
-  RAY_IMAGE_TAG="2.54.0-py311-aarch64"
+  RAY_IMAGE_TAG="2.57.0-py311-aarch64"
 else
-  RAY_IMAGE_TAG="2.54.0-py311"
+  RAY_IMAGE_TAG="2.57.0-py311"
 fi
 echo -e "Deploying Ray cluster for ${ARCH} architecture (image: ${RAY_IMAGE_TAG})..."
 
@@ -272,7 +273,7 @@ head:
       value: "Prometheus"
 EOF
 
-helm $HELM_CMD raycluster kuberay/ray-cluster --version 1.5.1 \
+helm $HELM_CMD raycluster kuberay/ray-cluster --version "$KUBERAY_CHART_VERSION" \
   -f "$HELM_VALUES" \
   -f "$OVERRIDE_VALUES"
 HELM_EXIT=$?

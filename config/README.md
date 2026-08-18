@@ -78,7 +78,7 @@ scrape_configs:
   - job_name: 'ray'
     static_configs:
       - targets: ['host.docker.internal:8080']
-  
+
   - job_name: 'my-service'
     static_configs:
       - targets: ['my-service:9100']
@@ -137,5 +137,3 @@ If you see the "ray" target as "DOWN" in Prometheus (http://localhost:9090/targe
 - [Prometheus Configuration Docs](https://prometheus.io/docs/prometheus/latest/configuration/configuration/)
 - [Grafana Provisioning Docs](https://grafana.com/docs/grafana/latest/administration/provisioning/)
 - [Ray Metrics Docs](https://docs.ray.io/en/latest/cluster/metrics.html)
-
-

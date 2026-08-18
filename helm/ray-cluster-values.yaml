@@ -4,8 +4,8 @@
 
 image:
   # tag is set dynamically per-architecture in kuberay-init.sh
-  # ARM (Apple Silicon): 2.54.0-py311-aarch64
-  # x86_64:              2.54.0-py311
+  # ARM (Apple Silicon): 2.57.0-py311-aarch64
+  # x86_64:              2.57.0-py311
   pullPolicy: IfNotPresent
 
 head:

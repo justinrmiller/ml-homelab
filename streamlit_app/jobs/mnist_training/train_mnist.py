@@ -123,7 +123,8 @@ def train_mnist(config):
             tune.report(metrics)
 
 
-if __name__ == "__main__":
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    """Parse command line arguments for the tuning run."""
     parser = argparse.ArgumentParser(description="PyTorch MNIST Example")
     parser.add_argument(
         "--cuda", action="store_true", default=False, help="Enables GPU training"
@@ -131,13 +132,17 @@ if __name__ == "__main__":
     parser.add_argument(
         "--smoke-test", action="store_true", help="Finish quickly for testing"
     )
-    args, _ = parser.parse_known_args()
+    args, _ = parser.parse_known_args(argv)
+    return args
 
-    # for early stopping
+
+def build_tuner(args: argparse.Namespace) -> tune.Tuner:
+    """Build the Ray Tune tuner for the MNIST search."""
+    # AsyncHyperBandScheduler gives us early stopping of unpromising trials.
     sched = AsyncHyperBandScheduler()
+    resources_per_trial: dict[str, float] = {"cpu": 2.0, "gpu": float(args.cuda)}
 
-    resources_per_trial = {"cpu": 2, "gpu": int(args.cuda)}  # set this for GPUs
-    tuner = tune.Tuner(
+    return tune.Tuner(
         tune.with_resources(train_mnist, resources=resources_per_trial),
         tune_config=tune.TuneConfig(
             metric="mean_accuracy",
@@ -157,8 +162,22 @@ if __name__ == "__main__":
             "momentum": tune.uniform(0.1, 0.9),
         },
     )
-    results = tuner.fit()
+
+
+def main(argv: list[str] | None = None) -> None:
+    """Run the MNIST hyperparameter search and report the best config.
+
+    Raises:
+        RuntimeError: If any trial errored out.
+    """
+    args = parse_args(argv)
+    results = build_tuner(args).fit()
 
     print("Best config is:", results.get_best_result().config)
 
-    assert not results.errors
+    if results.errors:
+        raise RuntimeError(f"{len(results.errors)} trial(s) failed: {results.errors}")
+
+
+if __name__ == "__main__":
+    main()

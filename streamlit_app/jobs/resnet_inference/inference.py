@@ -3,7 +3,8 @@
 import argparse
 import io
 import os
-from typing import Any, Dict, Optional
+from collections.abc import Callable
+from typing import Any
 
 import numpy as np
 import ray
@@ -18,6 +19,23 @@ from torchvision import transforms
 IMAGE_SIZE = 224
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD = [0.229, 0.224, 0.225]
+IMAGE_EXTENSIONS = frozenset({".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".webp"})
+
+# Supported ResNet variants mapped to a loader for their IMAGENET1K_V1 weights.
+MODEL_BUILDERS: dict[str, Callable[[], nn.Module]] = {
+    "resnet18": lambda: torchvision.models.resnet18(
+        weights=torchvision.models.ResNet18_Weights.IMAGENET1K_V1
+    ),
+    "resnet34": lambda: torchvision.models.resnet34(
+        weights=torchvision.models.ResNet34_Weights.IMAGENET1K_V1
+    ),
+    "resnet50": lambda: torchvision.models.resnet50(
+        weights=torchvision.models.ResNet50_Weights.IMAGENET1K_V1
+    ),
+    "resnet101": lambda: torchvision.models.resnet101(
+        weights=torchvision.models.ResNet101_Weights.IMAGENET1K_V1
+    ),
+}
 
 
 class ResNetModel:
@@ -35,26 +53,17 @@ class ResNetModel:
         self.transform = self._get_transform()
 
     def _load_model(self) -> nn.Module:
-        """Load and configure the pre-trained ResNet model."""
-        if self.model_name == "resnet18":
-            model = torchvision.models.resnet18(
-                weights=torchvision.models.ResNet18_Weights.IMAGENET1K_V1
-            )
-        elif self.model_name == "resnet34":
-            model = torchvision.models.resnet34(
-                weights=torchvision.models.ResNet34_Weights.IMAGENET1K_V1
-            )
-        elif self.model_name == "resnet50":
-            model = torchvision.models.resnet50(
-                weights=torchvision.models.ResNet50_Weights.IMAGENET1K_V1
-            )
-        elif self.model_name == "resnet101":
-            model = torchvision.models.resnet101(
-                weights=torchvision.models.ResNet101_Weights.IMAGENET1K_V1
-            )
-        else:
-            raise ValueError(f"Unsupported model: {self.model_name}")
+        """Load and configure the pre-trained ResNet model.
 
+        Raises:
+            ValueError: If the configured model name is not supported.
+        """
+        try:
+            builder = MODEL_BUILDERS[self.model_name]
+        except KeyError:
+            raise ValueError(f"Unsupported model: {self.model_name}") from None
+
+        model = builder()
         model.eval()
         model.to(self.device)
         return model
@@ -70,7 +79,7 @@ class ResNetModel:
             ]
         )
 
-    def __call__(self, batch: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+    def __call__(self, batch: dict[str, np.ndarray]) -> dict[str, Any]:
         """Perform inference on a batch of images.
 
         Args:
@@ -98,7 +107,8 @@ class ResNetModel:
                 img_tensor = self.transform(img)
                 images.append(img_tensor)
 
-            except Exception as e:
+            # One unreadable image must not fail the whole batch.
+            except Exception as e:  # noqa: BLE001
                 print(f"Error processing image {i}: {e}")
                 # Create a dummy tensor for failed images
                 dummy_tensor = torch.zeros(3, IMAGE_SIZE, IMAGE_SIZE)
@@ -131,9 +141,9 @@ class ResNetModel:
 
 def load_images_from_s3(
     s3_uri: str,
-    aws_access_key_id: Optional[str] = None,
-    aws_secret_access_key: Optional[str] = None,
-    aws_session_token: Optional[str] = None,
+    aws_access_key_id: str | None = None,
+    aws_secret_access_key: str | None = None,
+    aws_session_token: str | None = None,
 ) -> ray.data.Dataset:
     """Load images from S3 using Ray Data.
 
@@ -167,7 +177,7 @@ def load_images_from_s3(
     return ds
 
 
-def filter_image_files(batch: Dict[str, Any]) -> Dict[str, Any]:
+def filter_image_files(batch: dict[str, Any]) -> dict[str, Any]:
     """Filter to keep only image files based on file extension.
 
     Args:
@@ -176,23 +186,16 @@ def filter_image_files(batch: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Filtered batch containing only image files
     """
-    image_extensions = {".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".webp"}
+    image_indices = [
+        i
+        for i, path in enumerate(batch["path"])
+        if str(path).lower().endswith(tuple(IMAGE_EXTENSIONS))
+    ]
 
-    # Get indices of image files
-    image_indices = []
-    for i, path in enumerate(batch["path"]):
-        if any(path.lower().endswith(ext) for ext in image_extensions):
-            image_indices.append(i)
+    if not image_indices:
+        return {key: [] for key in batch}
 
-    # Filter batch to include only image files
-    if image_indices:
-        filtered_batch = {}
-        for key, values in batch.items():
-            filtered_batch[key] = [values[i] for i in image_indices]
-        return filtered_batch
-    else:
-        # Return empty batch if no images found
-        return {key: [] for key in batch.keys()}
+    return {key: [values[i] for i in image_indices] for key, values in batch.items()}
 
 
 def run_resnet_batch_prediction(
@@ -200,9 +203,9 @@ def run_resnet_batch_prediction(
     model_name: str = "resnet50",
     batch_size: int = 32,
     num_gpus: float = 1.0,
-    aws_access_key_id: Optional[str] = None,
-    aws_secret_access_key: Optional[str] = None,
-    aws_session_token: Optional[str] = None,
+    aws_access_key_id: str | None = None,
+    aws_secret_access_key: str | None = None,
+    aws_session_token: str | None = None,
 ) -> ray.data.Dataset:
     """Run ResNet batch prediction on images from S3.
 
@@ -216,7 +219,7 @@ def run_resnet_batch_prediction(
         aws_session_token: AWS session token
 
     Returns:
-        Ray Dataset with predictions
+        A materialized Ray Dataset with the predictions.
     """
     print(f"Loading images from S3: {s3_uri}")
 
@@ -228,12 +231,13 @@ def run_resnet_batch_prediction(
         aws_session_token=aws_session_token,
     )
 
-    print(f"Loaded {ds.count()} files from S3")
+    # Ray Data is lazy, so no count() is taken here: each one would force a
+    # full re-read of the bucket just to print a progress number.
 
     # Filter to keep only image files
-    ds = ds.map_batches(filter_image_files, batch_format="numpy")
-
-    print(f"Found {ds.count()} image files")
+    # Ray types UDFs against the full DataBatch union (which includes
+    # pandas frames); batch_format="numpy" narrows it to the dict form.
+    ds = ds.map_batches(filter_image_files, batch_format="numpy")  # ty: ignore[invalid-argument-type]
 
     # Run inference using ResNet model
     print(f"Running batch inference with {model_name}")
@@ -246,7 +250,27 @@ def run_resnet_batch_prediction(
         batch_format="numpy",
     )
 
-    return predictions
+    # Execute the plan once and keep the results. Without this, every
+    # downstream count(), take(), and write_*() re-runs the whole pipeline —
+    # including inference over every image.
+    return predictions.materialize()
+
+
+def output_format(output_path: str) -> str:
+    """Pick the output format for a destination path.
+
+    Args:
+        output_path: Local path the predictions will be written to.
+
+    Returns:
+        One of ``"parquet"``, ``"json"``, or ``"csv"``. Anything unrecognised,
+        including a bare directory, falls back to Parquet.
+    """
+    if output_path.endswith(".json"):
+        return "json"
+    if output_path.endswith(".csv"):
+        return "csv"
+    return "parquet"
 
 
 def save_predictions_locally(predictions: ray.data.Dataset, output_path: str) -> None:
@@ -256,29 +280,17 @@ def save_predictions_locally(predictions: ray.data.Dataset, output_path: str) ->
         predictions: Ray Dataset containing predictions
         output_path: Local path to save results
     """
-    print(f"Saving predictions locally to: {output_path}")
+    fmt = output_format(output_path)
+    print(f"Saving predictions locally to: {output_path} (format: {fmt})")
 
-    # Determine output format based on file extension
-    if output_path.endswith(".parquet") or output_path.endswith("/"):
-        # Save as Parquet (directory of files)
-        parquet_path = output_path if output_path.endswith("/") else output_path
-        predictions.write_parquet(parquet_path)
-        print(f"Predictions saved as Parquet to {parquet_path}")
+    writer = {
+        "parquet": predictions.write_parquet,
+        "json": predictions.write_json,
+        "csv": predictions.write_csv,
+    }[fmt]
+    writer(output_path)
 
-    elif output_path.endswith(".json"):
-        # Save as JSON Lines
-        predictions.write_json(output_path)
-        print(f"Predictions saved as JSON to {output_path}")
-
-    elif output_path.endswith(".csv"):
-        # Save as CSV
-        predictions.write_csv(output_path)
-        print(f"Predictions saved as CSV to {output_path}")
-
-    else:
-        # Default to Parquet directory
-        predictions.write_parquet(output_path)
-        print(f"Predictions saved as Parquet directory to {output_path}")
+    print(f"Predictions saved as {fmt} to {output_path}")
 
 
 def show_sample_predictions(
@@ -305,8 +317,8 @@ def show_sample_predictions(
         print(f"  Top 5 scores: {[f'{score:.4f}' for score in sample['top_5_scores']]}")
 
 
-def main() -> None:
-    """Main function to run ResNet batch prediction on S3 data."""
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    """Parse command line arguments for the batch prediction run."""
     parser = argparse.ArgumentParser(
         description="Ray Data ResNet Batch Prediction from S3",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -376,10 +388,24 @@ def main() -> None:
         help="Run a quick test with smaller batch size",
     )
 
-    args = parser.parse_args()
+    return parser.parse_args(argv)
 
-    # Initialize Ray
-    if not ray.is_initialized():
+
+def main(argv: list[str] | None = None) -> None:
+    """Run ResNet batch prediction on S3 data.
+
+    Args:
+        argv: Command line arguments, defaulting to ``sys.argv[1:]``.
+
+    Raises:
+        Exception: Re-raised after logging if the pipeline fails.
+    """
+    args = parse_args(argv)
+
+    # Only tear Ray down at the end if we were the ones who started it: when
+    # this runs as a submitted Ray job, the driver connection is not ours.
+    started_ray = not ray.is_initialized()
+    if started_ray:
         ray.init()
 
     try:
@@ -412,8 +438,8 @@ def main() -> None:
         print(f"Error during batch prediction: {e}")
         raise
     finally:
-        # Clean up Ray
-        ray.shutdown()
+        if started_ray:
+            ray.shutdown()
 
 
 if __name__ == "__main__":

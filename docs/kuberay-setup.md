@@ -90,10 +90,10 @@ helm install kuberay-operator kuberay/kuberay-operator --create-namespace --name
 ### 3. Ray Cluster Deployment
 ```bash
 # For ARM architecture (Apple Silicon)
-helm install raycluster kuberay/ray-cluster --version 1.5.1 --set 'image.tag=2.54.0-aarch64'
+helm install raycluster kuberay/ray-cluster --version 1.6.2 --set 'image.tag=2.57.0-aarch64'
 
 # For x86_64 architecture
-helm install raycluster kuberay/ray-cluster --version 1.5.1
+helm install raycluster kuberay/ray-cluster --version 1.6.2
 ```
 
 ### 4. Service Access
@@ -118,16 +118,16 @@ Configure KubeRay through `.env` file:
 # KubeRay Configuration
 KUBERAY_NAMESPACE=default
 KUBERAY_CLUSTER_NAME=raycluster-kuberay
-KUBERAY_RAY_VERSION=2.54.0
-KUBERAY_OPERATOR_VERSION=1.5.1
+KUBERAY_RAY_VERSION=2.57.0
+KUBERAY_OPERATOR_VERSION=1.6.2
 KIND_CLUSTER_NAME=kind
 KIND_NODE_IMAGE=kindest/node:v1.35.0
 ```
 
 ### Cluster Specifications
-- **Ray Version**: 2.54.0
+- **Ray Version**: 2.57.0
 - **Kubernetes Version**: 1.35.0
-- **Operator Version**: 1.5.1
+- **Operator Version**: 1.6.2
 - **Default Namespace**: default
 
 ## Usage
@@ -239,7 +239,7 @@ helm list --all-namespaces
 
 # Uninstall and reinstall
 helm uninstall raycluster
-helm install raycluster kuberay/ray-cluster --version 1.5.1
+helm install raycluster kuberay/ray-cluster --version 1.6.2
 ```
 
 ### Resource Management
@@ -313,9 +313,7 @@ from ray import train
 
 # Distributed training
 trainer = train.Trainer(
-    backend="torch",
-    num_workers=4,
-    resources_per_worker={"CPU": 2, "GPU": 1}
+    backend="torch", num_workers=4, resources_per_worker={"CPU": 2, "GPU": 1}
 )
 trainer.fit()
 ```
@@ -329,9 +327,7 @@ from ray import tune
 tuner = tune.Tuner(
     trainable=train_model,
     param_space={"lr": tune.loguniform(1e-4, 1e-1)},
-    run_config=train.RunConfig(
-        resources=train.ScalingConfig(num_workers=4)
-    )
+    run_config=train.RunConfig(resources=train.ScalingConfig(num_workers=4)),
 )
 results = tuner.fit()
 ```
