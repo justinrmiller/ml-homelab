@@ -117,7 +117,7 @@ echo
 # Step 3: Install KubeRay operator
 echo -e "${YELLOW}Step 3/7: Installing KubeRay operator...${NC}"
 # Keep KUBERAY_CHART_VERSION in sync with the ray-cluster chart version below.
-KUBERAY_CHART_VERSION="1.6.2"
+KUBERAY_CHART_VERSION="1.7.0"
 
 echo -e "Adding KubeRay Helm repository..."
 helm repo add kuberay https://ray-project.github.io/kuberay-helm/
@@ -125,6 +125,14 @@ helm repo update
 
 # `upgrade --install` rather than skipping when present: an operator left at an
 # older chart version would otherwise keep running against a newer Ray cluster.
+#
+# Caveat: Helm installs the chart's crds/ directory once and never upgrades it,
+# so bumping KUBERAY_CHART_VERSION on a Kind cluster that is already running
+# leaves the previous CRDs in place. `make stop` deletes the Kind cluster, so
+# the usual stop/start cycle picks the new CRDs up; to upgrade in place instead,
+# apply them by hand:
+#   kubectl apply --server-side -f \
+#     https://raw.githubusercontent.com/ray-project/kuberay/v${KUBERAY_CHART_VERSION}/ray-operator/config/crd/bases/ray.io_rayclusters.yaml
 echo -e "Installing/upgrading KubeRay operator to ${KUBERAY_CHART_VERSION}..."
 if helm upgrade --install kuberay-operator kuberay/kuberay-operator \
   --version "$KUBERAY_CHART_VERSION" \
@@ -250,9 +258,9 @@ else
 fi
 
 if [ "$ARCH" = "aarch64" ]; then
-  RAY_IMAGE_TAG="2.57.0-py311-aarch64"
+  RAY_IMAGE_TAG="2.58.0-py312-aarch64"
 else
-  RAY_IMAGE_TAG="2.57.0-py311"
+  RAY_IMAGE_TAG="2.58.0-py312"
 fi
 echo -e "Deploying Ray cluster for ${ARCH} architecture (image: ${RAY_IMAGE_TAG})..."
 

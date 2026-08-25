@@ -20,7 +20,7 @@ A local development environment for orchestrating, training, and visualizing mac
 │       └── provisioning/
 │           ├── dashboards/
 │           │   ├── ray-dashboards.yml
-│           │   └── json/        # Ray 2.57.0 Grafana dashboards (8, generated)
+│           │   └── json/        # Ray 2.58.0 Grafana dashboards (8, generated)
 │           └── datasources/
 │               └── prometheus.yml
 ├── helm/                        # Helm chart values
@@ -62,7 +62,7 @@ A local development environment for orchestrating, training, and visualizing mac
 
 ## Components
 
-### 1. **Ray 2.57.0 (via KubeRay)**
+### 1. **Ray 2.58.0 (via KubeRay)**
 - **Purpose:** Distributed ML training, hyperparameter tuning, and job submission.
 - **Deployment:** Kubernetes-based via Kind cluster and KubeRay operator.
 - **Features:**
@@ -106,7 +106,7 @@ A local development environment for orchestrating, training, and visualizing mac
 - **Configured in:** [`docker-compose.yaml`](docker-compose.yaml)
 - **Features:**
   - Pre-configured Prometheus datasource
-  - 8 pre-built Ray 2.57.0 dashboards (Default, Data, Data LLM, Serve,
+  - 8 pre-built Ray 2.58.0 dashboards (Default, Data, Data LLM, Serve,
     Serve Deployment, Serve LLM, Serve LLM SGLang, Train), exported with
     `make dashboards`
   - Customizable dashboards and alerts
@@ -123,7 +123,7 @@ A local development environment for orchestrating, training, and visualizing mac
 
 - [Docker](https://www.docker.com/) or [Podman](https://podman.io/) (container runtime)
   - When using Podman, `podman-compose` is preferred and will be auto-installed via `uv tool install` if not present
-- [Python](https://python.org/) 3.12+
+- [Python](https://python.org/) 3.12 (3.13 is not yet supported)
 - [uv](https://docs.astral.sh/uv/) (Python package manager)
 
 The following tools will be auto-installed via Homebrew if missing:
@@ -294,7 +294,7 @@ Prometheus scrapes metrics from Ray every 15 seconds and stores them for histori
 #### Grafana
 Grafana provides visual dashboards for Ray metrics at http://localhost:3000/ (admin/admin). Features include:
 - Pre-configured Prometheus datasource
-- 8 pre-built Ray 2.57.0 dashboards: Default, Data, Data LLM, Serve, Serve Deployment, Serve LLM, Serve LLM SGLang, Train
+- 8 pre-built Ray 2.58.0 dashboards: Default, Data, Data LLM, Serve, Serve Deployment, Serve LLM, Serve LLM SGLang, Train
 - Customizable panels and alerts
 
 ### Streamlit Dashboard

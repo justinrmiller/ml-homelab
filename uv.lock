@@ -787,7 +787,7 @@ dev = [
 requires-dist = [
     { name = "boto3", specifier = ">=1.43.73" },
     { name = "python-dotenv", specifier = ">=1.2.2" },
-    { name = "ray", extras = ["default"], specifier = "==2.57.0" },
+    { name = "ray", extras = ["default"], specifier = "==2.58.0" },
     { name = "streamlit", specifier = "==1.61.1" },
     { name = "torch", marker = "sys_platform == 'linux' and extra == 'cpu'", specifier = ">=2.13.0", index = "https://download.pytorch.org/whl/cpu", conflict = { package = "ml-homelab", extra = "cpu" } },
     { name = "torch", marker = "sys_platform == 'linux' and extra == 'gpu'", specifier = ">=2.13.0", index = "https://download.pytorch.org/whl/cu129", conflict = { package = "ml-homelab", extra = "gpu" } },
@@ -1523,7 +1523,7 @@ wheels = [
 
 [[package]]
 name = "ray"
-version = "2.57.0"
+version = "2.58.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -1536,10 +1536,10 @@ dependencies = [
     { name = "requests" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/29/95/1350323300f88673d8d53f825d482834daddab9614c600855dc1a0189b33/ray-2.57.0-cp312-cp312-macosx_12_0_arm64.whl", hash = "sha256:8ef591575c531793feb7f77744c52c34509ff58b48b30d0a3bcb6a1666256b02", size = 66747412, upload-time = "2026-08-11T00:21:19.219Z" },
-    { url = "https://files.pythonhosted.org/packages/80/bf/63da261f0424039171745ae62f9804fb6e55b7aa61a50e886d2069e0d77f/ray-2.57.0-cp312-cp312-manylinux2014_aarch64.whl", hash = "sha256:eeb1d1adb61bd1d8affdc5fb555af0494fed8fec53b83576d4c60f811e06be94", size = 76886725, upload-time = "2026-08-11T00:21:24.801Z" },
-    { url = "https://files.pythonhosted.org/packages/f3/3f/a580c1a8d9574372f83d4b97cd11ae64fdfa1c099c4728ec5197470cf094/ray-2.57.0-cp312-cp312-manylinux2014_x86_64.whl", hash = "sha256:595d088b1fd1add64654c6cebe203e25903787b650d35c4a3dc008d451e48a41", size = 77891434, upload-time = "2026-08-11T00:21:29.991Z" },
-    { url = "https://files.pythonhosted.org/packages/fd/8d/85c3a1ad54f6fa9cc1d1261cc5087435d03761fd50980cabe15a8ccd6f71/ray-2.57.0-cp312-cp312-win_amd64.whl", hash = "sha256:b9f26334a862fac660f70b125474d5c7b72d16e23b3ebfefeacd72659aa36af6", size = 28684792, upload-time = "2026-08-11T00:21:34.788Z" },
+    { url = "https://files.pythonhosted.org/packages/62/04/99fbdee83ae77a8201e226e8548ff24aae15153f4d6d14a2ef0d302740cb/ray-2.58.0-cp312-cp312-macosx_12_0_arm64.whl", hash = "sha256:308863a6468dc969d1d52a99233569d7a2a9c2745f589b74ff277e9769486077", size = 67203436, upload-time = "2026-08-23T04:46:31.553Z" },
+    { url = "https://files.pythonhosted.org/packages/ea/fd/c61c335990deb55215c5ed6ebaf59400c95d0b247276acb9f04d715f6d8c/ray-2.58.0-cp312-cp312-manylinux2014_aarch64.whl", hash = "sha256:62f2f17a4d50150969dcf0a4ccbdafbdafa87d6be225ee1208a7b56bd373a37c", size = 77382773, upload-time = "2026-08-23T04:46:36.926Z" },
+    { url = "https://files.pythonhosted.org/packages/21/7d/414e1f271bd5f849fbdb4e8646d23c2897719b0c0399a626c73a3815e2ef/ray-2.58.0-cp312-cp312-manylinux2014_x86_64.whl", hash = "sha256:1e20c4a8d2563d9580e78f7c15297a9f8afe92401b698bceb4106c34b30c01c6", size = 78389778, upload-time = "2026-08-23T04:46:42.169Z" },
+    { url = "https://files.pythonhosted.org/packages/a0/19/0682c7e47979411383bbfee774815021b522be7b66a655f4eef2a4313109/ray-2.58.0-cp312-cp312-win_amd64.whl", hash = "sha256:d49ff40e28bafeae29eed8118ce4269a56589e3952268059fb57e60c8721df86", size = 28942354, upload-time = "2026-08-23T04:46:46.529Z" },
 ]
 
 [package.optional-dependencies]
