@@ -1,7 +1,9 @@
 """Streamlit dashboard for the ML homelab."""
 
 import os
+import sys
 from collections.abc import Iterable
+from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
@@ -12,6 +14,16 @@ load_dotenv()
 # HTTP instead, so RAY_ADDRESS is not needed here. This has to happen before
 # anything imports ray.
 os.environ.pop("RAY_ADDRESS", None)
+
+# `streamlit run streamlit_app/app.py` puts this file's own directory on
+# sys.path, not the repository root, so the absolute `streamlit_app` imports
+# below do not resolve on their own. pytest supplies the root via
+# `pythonpath = ["."]` in pyproject.toml, which is why the tests pass either
+# way; the app has to arrange it for itself. Must precede the first
+# `streamlit_app` import.
+_REPO_ROOT = str(Path(__file__).resolve().parent.parent)
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
 
 import streamlit as st  # noqa: E402
 

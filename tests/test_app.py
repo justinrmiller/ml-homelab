@@ -4,6 +4,9 @@ The app script is executed headlessly with the S3, Ray, and health-check layers
 replaced by the in-memory doubles from ``conftest``.
 """
 
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -189,3 +192,30 @@ def test_failed_job_reports_an_error(app, monkeypatch):
     app.button(key="Resnet Inference").click().run()
 
     assert any("ended with status" in block.value for block in app.error)
+
+
+def test_app_script_imports_its_own_package_without_help(tmp_path):
+    """`streamlit run` must be able to execute app.py directly.
+
+    Streamlit puts the *script's* directory on ``sys.path``, not the repository
+    root, so the absolute ``streamlit_app`` imports in ``app.py`` only resolve
+    because the script bootstraps the root itself. Every other test here goes
+    through ``AppTest`` under pytest, which supplies the root via
+    ``pythonpath = ["."]`` and therefore cannot catch a regression.
+
+    Run from an unrelated working directory with ``PYTHONPATH`` cleared so the
+    only thing that can make the import work is the bootstrap.
+    """
+    env = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"}
+
+    result = subprocess.run(
+        [sys.executable, APP_PATH],
+        cwd=tmp_path,
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=APP_TIMEOUT * 2,
+    )
+
+    assert "No module named 'streamlit_app'" not in result.stderr
+    assert result.returncode == 0, result.stderr[-2000:]
