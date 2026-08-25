@@ -5,7 +5,7 @@ Get up and running with KubeRay, MinIO, and metrics monitoring in minutes!
 ## Prerequisites
 
 - Docker or Podman
-- Python 3.12+
+- Python 3.12 (3.13 is not yet supported)
 - [uv](https://docs.astral.sh/uv/) (Python package manager)
 
 The setup script will automatically install Kind, Helm, and kubectl via Homebrew if missing.
@@ -52,7 +52,7 @@ This single command will:
 uv run ray job submit --address http://localhost:8265 -- python -c "import ray; ray.init(); print(ray.cluster_resources())"
 
 # Or use the Makefile shortcut
-make job SCRIPT=hello_ray_job.py
+make job SCRIPT=examples/hello_ray_job.py
 
 # MNIST training example
 cd streamlit_app/jobs/mnist_training
@@ -108,7 +108,7 @@ make start    # Start all services
 make stop     # Stop all services
 make status   # Check cluster status
 make run      # Run Streamlit only
-make job SCRIPT=hello_ray_job.py  # Submit a Ray job
+make job SCRIPT=examples/hello_ray_job.py  # Submit a Ray job
 ```
 
 ## Environment Configuration

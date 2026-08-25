@@ -14,3 +14,10 @@ airflow.db
 .idea/
 
 data/
+
+# Test and coverage artifacts
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
+.ruff_cache/

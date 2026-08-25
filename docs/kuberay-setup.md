@@ -90,11 +90,15 @@ helm install kuberay-operator kuberay/kuberay-operator --create-namespace --name
 ### 3. Ray Cluster Deployment
 ```bash
 # For ARM architecture (Apple Silicon)
-helm install raycluster kuberay/ray-cluster --version 1.5.1 --set 'image.tag=2.54.0-aarch64'
+helm install raycluster kuberay/ray-cluster --version 1.7.0 --set 'image.tag=2.58.0-py312-aarch64'
 
 # For x86_64 architecture
-helm install raycluster kuberay/ray-cluster --version 1.5.1
+helm install raycluster kuberay/ray-cluster --version 1.7.0 --set 'image.tag=2.58.0-py312'
 ```
+
+The `py312` suffix is required: the unsuffixed `2.58.0` tags ship Python 3.10,
+which will not match this project's 3.12 interpreter. `scripts/kuberay-init.sh`
+sets the same tag automatically.
 
 ### 4. Service Access
 ```bash
@@ -118,17 +122,25 @@ Configure KubeRay through `.env` file:
 # KubeRay Configuration
 KUBERAY_NAMESPACE=default
 KUBERAY_CLUSTER_NAME=raycluster-kuberay
-KUBERAY_RAY_VERSION=2.54.0
-KUBERAY_OPERATOR_VERSION=1.5.1
 KIND_CLUSTER_NAME=kind
 KIND_NODE_IMAGE=kindest/node:v1.35.0
 ```
 
 ### Cluster Specifications
-- **Ray Version**: 2.54.0
+- **Ray Version**: 2.58.0
+- **Python Version**: 3.12 (image tag `2.58.0-py312`)
 - **Kubernetes Version**: 1.35.0
-- **Operator Version**: 1.5.1
+- **Operator Version**: 1.7.0
 - **Default Namespace**: default
+
+> **Upgrading the operator:** Helm installs a chart's CRDs on first install
+> and never upgrades them. `make stop` deletes the Kind cluster, so a normal
+> stop/start cycle picks up new CRDs. To bump the operator on a cluster that
+> is already running, apply the CRDs manually first:
+> ```bash
+> kubectl apply --server-side -f \
+>   https://raw.githubusercontent.com/ray-project/kuberay/v1.7.0/ray-operator/config/crd/bases/ray.io_rayclusters.yaml
+> ```
 
 ## Usage
 
@@ -237,9 +249,9 @@ helm repo update
 # List installed releases
 helm list --all-namespaces
 
-# Uninstall and reinstall
+# Uninstall and reinstall (see "Ray Cluster Deployment" for the image tag)
 helm uninstall raycluster
-helm install raycluster kuberay/ray-cluster --version 1.5.1
+helm install raycluster kuberay/ray-cluster --version 1.7.0 --set 'image.tag=2.58.0-py312'
 ```
 
 ### Resource Management
@@ -313,9 +325,7 @@ from ray import train
 
 # Distributed training
 trainer = train.Trainer(
-    backend="torch",
-    num_workers=4,
-    resources_per_worker={"CPU": 2, "GPU": 1}
+    backend="torch", num_workers=4, resources_per_worker={"CPU": 2, "GPU": 1}
 )
 trainer.fit()
 ```
@@ -329,9 +339,7 @@ from ray import tune
 tuner = tune.Tuner(
     trainable=train_model,
     param_space={"lr": tune.loguniform(1e-4, 1e-1)},
-    run_config=train.RunConfig(
-        resources=train.ScalingConfig(num_workers=4)
-    )
+    run_config=train.RunConfig(resources=train.ScalingConfig(num_workers=4)),
 )
 results = tuner.fit()
 ```

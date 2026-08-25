@@ -5,20 +5,127 @@ description = "Local ML workflow orchestration with KubeRay, Streamlit, and MinI
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 dependencies = [
-    "boto3>=1.40.48",
-    "python-dotenv>=1.0.0",
-    "ray[default]==2.54.0",
-    "streamlit==1.45.1",
-    "torch>=2.8.0",
-    "torchvision>=0.23.0",
-    "transformers>=4.57.0",
+    "boto3>=1.43.73",
+    "python-dotenv>=1.2.2",
+    "ray[default]==2.58.0",
+    "streamlit==1.61.1",
+    "transformers>=5.15.0",
 ]
+
+# torch lives in a mutually exclusive extra rather than in `dependencies`, so
+# one lockfile can carry both the CPU and the CUDA build. Pick one at sync
+# time; `make sync` detects which. See "PyTorch builds" in the README.
+[project.optional-dependencies]
+cpu = ["torch>=2.13.0", "torchvision>=0.28.0"]
+gpu = ["torch>=2.13.0", "torchvision>=0.28.0"]
 
 [dependency-groups]
 dev = [
-    "pre-commit>=4.0.0",
-    "pytest>=8.0.0",
+    "pre-commit>=4.6.2",
+    "pytest>=9.1.1",
+    "pytest-cov>=7.0.0",
+    "ruff>=0.15.0",
+    "ty>=0.0.72",
 ]
 
 [project.scripts]
 app = "streamlit.web.cli:main"
+
+[tool.uv]
+# uv refuses to resolve both at once, which is what keeps them separable.
+conflicts = [[{ extra = "cpu" }, { extra = "gpu" }]]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu129"
+url = "https://download.pytorch.org/whl/cu129"
+explicit = true
+
+# Linux only: macOS wheels live on PyPI and are CPU/MPS either way, so both
+# extras fall through to the default index there.
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cpu", extra = "cpu", marker = "sys_platform == 'linux'" },
+    { index = "pytorch-cu129", extra = "gpu", marker = "sys_platform == 'linux'" },
+]
+torchvision = [
+    { index = "pytorch-cpu", extra = "cpu", marker = "sys_platform == 'linux'" },
+    { index = "pytorch-cu129", extra = "gpu", marker = "sys_platform == 'linux'" },
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-ra --strict-markers --strict-config"
+filterwarnings = [
+    "ignore::DeprecationWarning:ray.*",
+    "ignore::DeprecationWarning:google.*",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["streamlit_app", "examples", "scripts"]
+omit = ["*/__init__.py"]
+
+[tool.coverage.report]
+show_missing = true
+# Every measured file stays in the table. Hiding the fully-covered ones makes
+# the CI log look like coverage only ran against whichever file is failing.
+skip_covered = false
+fail_under = 95
+exclude_also = [
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "\\.\\.\\.",
+]
+
+[tool.ty.environment]
+python-version = "3.12"
+python = ".venv"
+
+[tool.ty.src]
+include = ["streamlit_app", "examples", "scripts", "tests"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "SIM",  # flake8-simplify
+    "N",    # pep8-naming
+    "BLE",  # flake8-blind-except
+    "D",    # pydocstyle
+    "UP",   # pyupgrade
+    "RUF",  # ruff-specific
+]
+ignore = [
+    "D203",  # conflicts with D211
+    "D213",  # conflicts with D212
+    "E501",  # line length handled by the formatter
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = [
+    "D100",    # module docstrings
+    "D101",    # docstrings on test doubles
+    "D102",
+    "D103",
+    "D104",
+    "D107",
+    "N803",    # S3 doubles mirror boto3's PascalCase keyword arguments
+    "RUF012",  # test doubles do not need ClassVar annotations
+]

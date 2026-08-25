@@ -20,7 +20,7 @@ A local development environment for orchestrating, training, and visualizing mac
 │       └── provisioning/
 │           ├── dashboards/
 │           │   ├── ray-dashboards.yml
-│           │   └── json/        # Ray 2.54.0 Grafana dashboards (6 dashboards)
+│           │   └── json/        # Ray 2.58.0 Grafana dashboards (8, generated)
 │           └── datasources/
 │               └── prometheus.yml
 ├── helm/                        # Helm chart values
@@ -31,7 +31,10 @@ A local development environment for orchestrating, training, and visualizing mac
 │   ├── kuberay-stop.sh          # KubeRay cluster shutdown
 │   └── kuberay-status.sh        # KubeRay cluster status check
 ├── streamlit_app/               # Streamlit dashboard app
-│   ├── app.py                   # Main Streamlit dashboard
+│   ├── app.py                   # Streamlit UI (rendering only)
+│   ├── health.py                # Service health and disk checks
+│   ├── storage.py               # MinIO/S3 helpers
+│   ├── job_runner.py            # Ray Jobs API submission and polling
 │   └── jobs/                    # ML jobs for Ray execution
 │       ├── mnist_training/      # MNIST example job
 │       │   ├── train_mnist.py   # Training script
@@ -40,8 +43,11 @@ A local development environment for orchestrating, training, and visualizing mac
 │       └── resnet_inference/    # ResNet example job
 │           ├── inference.py     # Inference script
 │           └── runtime_env.yaml # Ray runtime environment (pip deps)
-├── hello_ray_job.py             # Simple Ray job example
-├── ray_job_example.py           # Ray job submission example
+├── tests/                       # Pytest suite (see Testing below)
+├── .github/workflows/ci.yml     # Lint, type check, and test on every push
+├── examples/                    # Standalone Ray examples
+│   ├── hello_ray_job.py         # Simple Ray job
+│   └── ray_job_example.py       # Job submission via the Ray Jobs API
 ├── docker-compose.yaml          # MinIO, Prometheus, Grafana orchestration
 ├── kind-config.yaml             # Kind cluster configuration
 ├── pyproject.toml               # Python project config (managed by uv)
@@ -56,7 +62,7 @@ A local development environment for orchestrating, training, and visualizing mac
 
 ## Components
 
-### 1. **Ray 2.54.0 (via KubeRay)**
+### 1. **Ray 2.58.0 (via KubeRay)**
 - **Purpose:** Distributed ML training, hyperparameter tuning, and job submission.
 - **Deployment:** Kubernetes-based via Kind cluster and KubeRay operator.
 - **Features:**
@@ -100,7 +106,9 @@ A local development environment for orchestrating, training, and visualizing mac
 - **Configured in:** [`docker-compose.yaml`](docker-compose.yaml)
 - **Features:**
   - Pre-configured Prometheus datasource
-  - 6 pre-built Ray 2.54.0 dashboards (Default, Data, Serve, Serve Deployment, Serve LLM, Train)
+  - 8 pre-built Ray 2.58.0 dashboards (Default, Data, Data LLM, Serve,
+    Serve Deployment, Serve LLM, Serve LLM SGLang, Train), exported with
+    `make dashboards`
   - Customizable dashboards and alerts
 - **Port:** 3000
 - **Default credentials:** admin/admin
@@ -115,7 +123,7 @@ A local development environment for orchestrating, training, and visualizing mac
 
 - [Docker](https://www.docker.com/) or [Podman](https://podman.io/) (container runtime)
   - When using Podman, `podman-compose` is preferred and will be auto-installed via `uv tool install` if not present
-- [Python](https://python.org/) 3.12+
+- [Python](https://python.org/) 3.12 (3.13 is not yet supported)
 - [uv](https://docs.astral.sh/uv/) (Python package manager)
 
 The following tools will be auto-installed via Homebrew if missing:
@@ -184,7 +192,7 @@ For detailed KubeRay setup instructions, see [docs/kuberay-setup.md](docs/kubera
 
 - Submit a job to the Ray cluster:
   ```sh
-  make job SCRIPT=hello_ray_job.py
+  make job SCRIPT=examples/hello_ray_job.py
   ```
 
 ### Ray Job with Runtime Environment
@@ -204,7 +212,7 @@ For detailed KubeRay setup instructions, see [docs/kuberay-setup.md](docs/kubera
 
 - Submit a job and monitor its progress via Python API:
   ```sh
-  uv run python ray_job_example.py
+  uv run python -m examples.ray_job_example
   ```
 
 ### Streamlit UI
@@ -286,7 +294,7 @@ Prometheus scrapes metrics from Ray every 15 seconds and stores them for histori
 #### Grafana
 Grafana provides visual dashboards for Ray metrics at http://localhost:3000/ (admin/admin). Features include:
 - Pre-configured Prometheus datasource
-- 6 pre-built Ray 2.54.0 dashboards: Default, Data, Serve, Serve Deployment, Serve LLM, Train
+- 8 pre-built Ray 2.58.0 dashboards: Default, Data, Data LLM, Serve, Serve Deployment, Serve LLM, Serve LLM SGLang, Train
 - Customizable panels and alerts
 
 ### Streamlit Dashboard
@@ -302,12 +310,69 @@ Grafana provides visual dashboards for Ray metrics at http://localhost:3000/ (ad
 
 ## Testing
 
-You can manually test your ML workflows through the Streamlit interface or by running the job scripts directly.
+The project uses **pytest** with **coverage**, **ruff** for linting and formatting,
+and **ty** for type checking — all pinned in `uv.lock` and run through `uv run`.
+
+```sh
+make test        # run the test suite
+make cov         # run with coverage (term + HTML report in htmlcov/)
+make lint        # ruff check
+make format      # ruff format + autofix
+make typecheck   # ty check
+make check       # everything CI runs
+make hooks       # install the pre-commit and pre-push git hooks
+```
+
+### PyTorch builds (CPU vs GPU)
+
+`torch` is not in `dependencies`. It lives in two mutually exclusive extras, so
+one `uv.lock` carries both builds:
+
+| extra | on Linux | on macOS |
+| --- | --- | --- |
+| `cpu` | `torch 2.13.0+cpu` from `download.pytorch.org/whl/cpu` | PyPI wheel (CPU/MPS) |
+| `gpu` | `torch 2.13.0+cu129` from `download.pytorch.org/whl/cu129` | PyPI wheel (CPU/MPS) |
+
+Hardware cannot be expressed as a dependency marker, so the choice happens at
+sync time rather than in the lockfile. [`scripts/torch-extra.sh`](scripts/torch-extra.sh)
+probes `nvidia-smi` and prints `gpu` or `cpu`, and the Makefile passes that to
+every uv command:
+
+```sh
+make sync                    # picks the build matching this machine
+make sync TORCH_EXTRA=gpu    # force the CUDA build
+make test TORCH_EXTRA=cpu    # force the CPU build
+```
+
+CI pins `--extra cpu` explicitly, since GitHub runners have no GPU and the CUDA
+wheels add roughly 3 GB.
+
+> **One gotcha:** because torch is an extra, a bare `uv run pytest` syncs an
+> environment *without* it and the tests fail to import. Use `make test`, or
+> [`scripts/uv-run.sh`](scripts/uv-run.sh), or pass `--extra` yourself.
+
+Ray generates its Grafana dashboards from code, so the committed JSON goes
+stale whenever Ray is upgraded. After a version bump, run:
+
+```sh
+make dashboards
+```
+
+A test asserts the committed dashboards match the installed Ray version, so
+CI fails rather than letting them drift.
+
+Coverage is configured in `pyproject.toml` and fails below **95%**. The suite
+covers the health checks, the S3 helpers, runtime-environment assembly and job
+polling, both Ray job scripts, and the Streamlit UI itself via
+`streamlit.testing.v1.AppTest` — no running cluster, MinIO, or network is
+required.
 
 ### Ray Job Testing
 
+Against a real cluster:
+
 ```sh
-make job SCRIPT=hello_ray_job.py
+make job SCRIPT=examples/hello_ray_job.py
 ```
 
 ### S3 Connection Testing
@@ -340,8 +405,9 @@ print([b["Name"] for b in buckets["Buckets"]])
   - Update the Streamlit app to include new job types
 
 - **Extend Streamlit UI:**
-  - Edit [`streamlit_app/app.py`](streamlit_app/app.py)
-  - Add new tabs, features, or integrations
+  - Put rendering in [`streamlit_app/app.py`](streamlit_app/app.py) and logic in
+    `health.py`, `storage.py`, or `job_runner.py` so it stays unit-testable
+  - Add a matching test under [`tests/`](tests/)
 
 - **Install extra Python packages:**
   ```sh
@@ -364,7 +430,7 @@ make run      # Start the Streamlit app only
 make start    # Start all services (KubeRay + Docker/Podman Compose)
 make stop     # Stop all services
 make status   # Check cluster status
-make job SCRIPT=hello_ray_job.py                           # Submit a simple Ray job
+make job SCRIPT=examples/hello_ray_job.py                           # Submit a simple Ray job
 make job SCRIPT=path/to/job.py RUNTIME_ENV=path/to/env.yaml  # Submit with pip deps
 ```
 

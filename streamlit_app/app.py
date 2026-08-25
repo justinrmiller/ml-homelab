@@ -1,25 +1,46 @@
-"""Streamlit app."""
+"""Streamlit dashboard for the ML homelab."""
 
 import os
-import shutil
-import socket
-import time
+import sys
+from collections.abc import Iterable
+from pathlib import Path
+from typing import Any
 
-import boto3
 from dotenv import load_dotenv
 
 load_dotenv()
 # Prevent Ray auto-connecting via Ray Client protocol (ray://) which requires
 # matching Python versions between client and cluster. JobSubmissionClient uses
-# HTTP instead, so RAY_ADDRESS is not needed here.
+# HTTP instead, so RAY_ADDRESS is not needed here. This has to happen before
+# anything imports ray.
 os.environ.pop("RAY_ADDRESS", None)
-import streamlit as st
-import yaml
-from ray.job_submission import JobStatus, JobSubmissionClient
+
+# `streamlit run streamlit_app/app.py` puts this file's own directory on
+# sys.path, not the repository root, so the absolute `streamlit_app` imports
+# below do not resolve on their own. pytest supplies the root via
+# `pythonpath = ["."]` in pyproject.toml, which is why the tests pass either
+# way; the app has to arrange it for itself. Must precede the first
+# `streamlit_app` import.
+_REPO_ROOT = str(Path(__file__).resolve().parent.parent)
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
+
+import streamlit as st  # noqa: E402
+
+from streamlit_app import health, storage  # noqa: E402
+from streamlit_app.job_runner import (  # noqa: E402
+    INFERENCE_JOBS,
+    TRAINING_JOBS,
+    JobSpec,
+    create_client,
+    poll_job,
+    submit_job,
+    summarize_result,
+)
 
 st.set_page_config(layout="wide")
 
-css = """
+CSS = """
 <style>
     .stTabs [data-baseweb="tab-list"] button [data-testid="stMarkdownContainer"] p {
     font-size:1rem;
@@ -27,222 +48,168 @@ css = """
 </style>
 """
 
-st.markdown(css, unsafe_allow_html=True)
+st.markdown(CSS, unsafe_allow_html=True)
 
 
-def is_ray_running():
-    """Check to see if ray is running."""
+def render_job(spec: JobSpec) -> None:
+    """Render the run button for a job and stream its progress once clicked."""
+    if not st.button(key=spec.name, label=f"▶ Run {spec.name} job"):
+        return
+
+    client = create_client()
+    with st.spinner("Uploading code & submitting job…"):
+        job_id = submit_job(client, spec)
+    st.success(f"{spec.name} submitted: `{job_id}`")
+
+    status_box = st.empty()
+    log_box = st.empty()
+
+    def on_update(status, log_tail: str) -> None:
+        status_box.info(f"Status: **{status}**")
+        log_box.code(log_tail, language="text")
+
+    status = poll_job(client, job_id, on_update=on_update)
+
+    succeeded, message = summarize_result(spec.name, status)
+    (st.success if succeeded else st.error)(message)
+
+
+def render_status_header() -> None:
+    """Render the service status and disk usage row."""
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown(f"### 📦 MinIO (Port {health.MINIO_PORT})")
+        st.markdown(health.status_label(health.is_minio_running()))
+    with col2:
+        st.markdown(f"### 🦊 Ray (Port {health.RAY_DASHBOARD_PORT})")
+        st.markdown(health.status_label(health.is_ray_running()))
+    with col3:
+        st.markdown("### 📁 Disk Space")
+        st.info(health.get_disk_usage())
+
+
+def render_object_row(client: Any, bucket: str, obj: dict) -> None:
+    """Render one object's row: name, size, download, delete, and preview."""
+    key = obj["Key"]
+    col1, col2, col3, col4 = st.columns([4, 2, 1, 1])
+    with col1:
+        st.write(f"📄 `{key}`")
+    with col2:
+        st.write(storage.format_size(obj["Size"]))
+    with col3:
+        if st.button("⬇️", key=f"download-{key}"):
+            url = storage.presigned_download_url(client, bucket, key)
+            st.markdown(f"[Click to Download]({url})", unsafe_allow_html=True)
+    with col4:
+        if st.button("🗑️", key=f"delete-{key}"):
+            storage.delete_object(client, bucket, key)
+            st.warning(f"Deleted `{key}`")
+            st.rerun()
+
+    render_preview(client, bucket, key)
+
+
+def render_preview(client: Any, bucket: str, key: str) -> None:
+    """Render an inline preview of an object, if its type supports one."""
+    kind = storage.preview_kind(key)
+    if kind is None:
+        return
+
     try:
-        s = socket.create_connection(("localhost", 8265), timeout=2)
-        s.close()
-        return True
-    except:  # noqa: B001, E722
-        return False
-
-
-# Connect to Ray cluster via the dashboard (HTTP-based, works with KubeRay).
-# We intentionally avoid ray.init(address="ray://...") — the Ray Client protocol
-# is resource-heavy (spawns a proxy server per connection) and deprecated.
-# All job submission uses the Jobs API (JobSubmissionClient) over HTTP instead.
-RAY_DASHBOARD_URL = "http://localhost:8265"
-
-
-def wire_job(
-    job_name: str,
-    entrypoint: str,
-    working_dir: str = "./streamlit_app/jobs",
-    runtime_env_file: str | None = None,
-):
-    """Configure a job."""
-    if st.button(key=job_name, label=f"▶ Run {job_name} job"):
-        client = JobSubmissionClient(address=RAY_DASHBOARD_URL)
-        runtime_env: dict = {"working_dir": working_dir}
-        # Merge pip dependencies from runtime_env.yaml if provided
-        if runtime_env_file:
-            env_path = os.path.join(working_dir, runtime_env_file)
-            if os.path.isfile(env_path):
-                with open(env_path) as f:
-                    extra = yaml.safe_load(f) or {}
-                runtime_env.update(extra)
-        with st.spinner("Uploading code & submitting job…"):
-            job_id = client.submit_job(
-                entrypoint=entrypoint,
-                runtime_env=runtime_env,
-            )
-        st.success(f"{job_name} submitted: `{job_id}`")
-
-        # Status and logs
-        status_box = st.empty()
-        log_box = st.empty()
-
-        while True:
-            status = client.get_job_status(job_id)
-            status_box.info(f"Status: **{status}**")
-            logs = client.get_job_logs(job_id)
-            log_box.code(logs[-1024:], language="text")
-
-            if status in (JobStatus.SUCCEEDED, JobStatus.FAILED, JobStatus.STOPPED):
-                break
-            time.sleep(5)
-
-        if status == JobStatus.SUCCEEDED:
-            st.success(f"✓ {job_name} finished successfully")
+        if kind == "text":
+            st.code(storage.read_text_preview(client, bucket, key), language="text")
         else:
-            st.error(f"{job_name} ended with status **{status}** — check logs above")
+            st.image(
+                storage.read_object_bytes(client, bucket, key),
+                caption=key,
+                width="stretch",
+            )
+    except Exception as exc:  # noqa: BLE001 - surfaced to the user
+        st.warning(f"Could not preview `{key}`: {exc}")
 
 
-def check_minio_status():
-    """Minio status display."""
+def render_upload_form(client: Any, bucket: str) -> None:
+    """Render the upload form for the selected bucket.
+
+    The name field is rendered unconditionally: widgets inside a form do not
+    rerun the script, so one that only appears once a file is attached would
+    never be editable before the upload it is meant to name.
+
+    The submit branch is the one part of the UI AppTest cannot drive, since it
+    has no way to attach a file to ``st.file_uploader``; the logic behind it is
+    covered by :func:`streamlit_app.storage.resolve_object_key` and
+    :func:`streamlit_app.storage.try_upload`.
+    """
+    st.markdown("### ⬆️ Upload a file to this bucket")
+    with st.form("upload_form"):
+        uploaded_file = st.file_uploader("Choose a file", type=None)
+        dest_name = st.text_input(
+            "Object name in S3", placeholder="defaults to the name of the file"
+        )
+        submitted = st.form_submit_button("Upload")
+
+        if not (submitted and uploaded_file):
+            return
+
+        key = storage.resolve_object_key(dest_name, uploaded_file.name)
+        succeeded, message = storage.try_upload(client, uploaded_file, bucket, key)
+        if not succeeded:
+            st.error(message)
+            return
+        st.success(message)
+        st.rerun()
+
+
+def render_storage_tab() -> None:
+    """Render the MinIO bucket browser."""
+    client = storage.create_client()
+
     try:
-        s = socket.create_connection(("localhost", 9000), timeout=2)
-        s.close()
-        return "✅ Running"
-    except:  # noqa: B001, E722
-        return "❌ Not running"
+        bucket_names = storage.list_bucket_names(client)
+    except Exception as exc:  # noqa: BLE001 - surfaced to the user
+        st.error(f"Failed to connect to S3/MinIO: {exc}")
+        bucket_names = []
 
+    if not bucket_names:
+        st.info("No buckets found. Please create one using MinIO Console or AWS CLI.")
+        return
 
-def check_ray_status():
-    """Ray status display."""
-    return "✅ Running" if is_ray_running() else "❌ Not running"
+    bucket = st.selectbox("Select a bucket to view contents", bucket_names)
 
-
-def get_disk_usage():
-    """Retrieve disk usage."""
     try:
-        total, used, free = shutil.disk_usage("/")
-        return f"{free // (1024**3)} GB free out of {total // (1024**3)} GB"
-    except Exception as e:
-        return f"Error: {e}"
+        objects = storage.list_objects(client, bucket)
+    except Exception as exc:  # noqa: BLE001 - surfaced to the user
+        st.error(f"Error listing objects in `{bucket}`: {exc}")
+        objects = []
+    else:
+        st.markdown(f"### 📂 Contents of `{bucket}` ({len(objects)} objects)")
+
+    for obj in objects:
+        render_object_row(client, bucket, obj)
+
+    st.markdown("---")
+    render_upload_form(client, bucket)
+
+
+def render_job_tab(specs: Iterable[JobSpec], label: str) -> None:
+    """Render an expander with a run button for each job spec."""
+    for spec in specs:
+        with st.expander(f"{label} - {spec.name}", expanded=False):
+            render_job(spec)
 
 
 st.title("ML Homelab Dashboard")
 
-status_container = st.container()
-with status_container:
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.markdown("### 📦 MinIO (Port 9000)")
-        status = check_minio_status()
-        st.markdown("✅ Online" if "✅" in status else "❌ Offline")
-    with col2:
-        st.markdown("### 🦊 Ray (Port 8265)")
-        status = check_ray_status()
-        st.markdown("✅ Online" if "✅" in status else "❌ Offline")
-
-    with col3:
-        st.markdown("### 📁 Disk Space")
-        disk_usage = get_disk_usage()
-        st.info(disk_usage)
+with st.container():
+    render_status_header()
 
 tabs = st.tabs(["S3", "Training", "Inference"])
 
 with tabs[0]:
-    # Set up S3 client for MinIO
-    s3 = boto3.client(
-        "s3",
-        endpoint_url=os.environ.get("AWS_ENDPOINT_URL_S3", "http://localhost:9000"),
-        aws_access_key_id=os.environ.get("MINIO_ROOT_USER", "minioadmin"),
-        aws_secret_access_key=os.environ.get("MINIO_ROOT_PASSWORD", "minioadmin"),
-    )
-
-    # List all available buckets
-    try:
-        buckets = s3.list_buckets()["Buckets"]
-        bucket_names = [b["Name"] for b in buckets]
-    except Exception as e:
-        st.error(f"Failed to connect to S3/MinIO: {e}")
-        bucket_names = []
-
-    if bucket_names:  # noqa: C901
-        selected_bucket = st.selectbox("Select a bucket to view contents", bucket_names)
-
-        # List objects in the selected bucket
-        try:
-            objects = s3.list_objects_v2(Bucket=selected_bucket)
-            object_list = objects.get("Contents", [])
-            st.markdown(
-                f"### 📂 Contents of `{selected_bucket}` ({len(object_list)} objects)"
-            )
-
-            for obj in object_list:
-                obj_key = obj["Key"]
-                col1, col2, col3, col4 = st.columns([4, 2, 1, 1])
-                with col1:
-                    st.write(f"📄 `{obj_key}`")
-                with col2:
-                    size_kb = obj["Size"] / 1024
-                    st.write(f"{size_kb:.1f} KB")
-                with col3:
-                    if st.button("⬇️", key=f"download-{obj_key}"):
-                        url = s3.generate_presigned_url(
-                            "get_object",
-                            Params={"Bucket": selected_bucket, "Key": obj_key},
-                            ExpiresIn=3600,
-                        )
-                        st.markdown(
-                            f"[Click to Download]({url})", unsafe_allow_html=True
-                        )
-                with col4:
-                    if st.button("🗑️", key=f"delete-{obj_key}"):
-                        s3.delete_object(Bucket=selected_bucket, Key=obj_key)
-                        st.warning(f"Deleted `{obj_key}`")
-                        st.rerun()
-
-                # Preview if supported filetype
-                if obj_key.endswith((".txt", ".csv", ".json")):
-                    body = s3.get_object(Bucket=selected_bucket, Key=obj_key)["Body"]
-                    st.code(body.read().decode("utf-8")[:500], language="text")
-                elif obj_key.endswith((".png", ".jpg", ".jpeg")):
-                    img = s3.get_object(Bucket=selected_bucket, Key=obj_key)[
-                        "Body"
-                    ].read()
-                    st.image(img, caption=obj_key, use_column_width=True)
-
-        except Exception as e:
-            st.error(f"Error listing objects in `{selected_bucket}`: {e}")
-
-        st.markdown("---")
-
-        # Upload a new file to the bucket
-        st.markdown("### ⬆️ Upload a file to this bucket")
-        with st.form("upload_form"):
-            uploaded_file = st.file_uploader("Choose a file", type=None)
-            if uploaded_file:
-                dest_name = st.text_input("Object name in S3", value=uploaded_file.name)
-            submitted = st.form_submit_button("Upload")
-
-            if submitted and uploaded_file and dest_name:
-                try:
-                    s3.upload_fileobj(uploaded_file, selected_bucket, dest_name)
-                    st.success(f"Uploaded `{dest_name}` to `{selected_bucket}`")
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Upload failed: {e}")
-    else:
-        st.info("No buckets found. Please create one using MinIO Console or AWS CLI.")
+    render_storage_tab()
 
 with tabs[1]:
-    training_jobs = [
-        {
-            "job_name": "MNIST Tune",
-            "entrypoint": "python mnist_training/train_mnist.py",
-            "runtime_env_file": "mnist_training/runtime_env.yaml",
-        },
-    ]
-
-    for job in training_jobs:
-        with st.expander(f"Training Job - {job['job_name']}", expanded=False):
-            wire_job(job["job_name"], job["entrypoint"], runtime_env_file=job.get("runtime_env_file"))
+    render_job_tab(TRAINING_JOBS, "Training Job")
 
 with tabs[2]:
-    inference_jobs = [
-        {
-            "job_name": "Resnet Inference",
-            "entrypoint": "python resnet_inference/inference.py",
-            "runtime_env_file": "resnet_inference/runtime_env.yaml",
-        },
-    ]
-
-    for job in inference_jobs:
-        with st.expander(f"Inference Job - {job['job_name']}", expanded=False):
-            wire_job(job["job_name"], job["entrypoint"], runtime_env_file=job.get("runtime_env_file"))
+    render_job_tab(INFERENCE_JOBS, "Inference Job")

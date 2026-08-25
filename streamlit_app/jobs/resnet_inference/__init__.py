@@ -1,0 +1,1 @@
+"""ResNet batch inference job."""
