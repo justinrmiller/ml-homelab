@@ -62,14 +62,15 @@ echo
 # Check Kind cluster status
 echo -e "${YELLOW}Kind Cluster Status:${NC}"
 if command_exists kind; then
-  if kind_cmd get clusters | grep -q "kind"; then
-    echo -e "✅ Kind cluster: ${GREEN}Running${NC}"
+  resolve_kind_cluster_name
+  if kind_cluster_exists; then
+    echo -e "✅ Kind cluster '${KIND_CLUSTER_NAME}': ${GREEN}Running${NC}"
 
     # Check cluster info
     echo -e "${BLUE}Cluster Info:${NC}"
-    kubectl cluster-info --context kind-kind 2>/dev/null || echo -e "❌ Cannot connect to cluster"
+    kubectl cluster-info --context "$KIND_CONTEXT" 2>/dev/null || echo -e "❌ Cannot connect to cluster"
   else
-    echo -e "❌ Kind cluster: ${RED}Not running${NC}"
+    echo -e "❌ Kind cluster '${KIND_CLUSTER_NAME}': ${RED}Not running${NC}"
   fi
 else
   echo -e "❌ Kind not available"
@@ -133,11 +134,11 @@ _CRT="$CONTAINER_RT"
 # Check Compose services status
 echo -e "${YELLOW}Container Services:${NC}"
 if [ -n "$_CRT" ]; then
-  if $_CRT ps --format "table {{.Names}}\t{{.Status}}" | grep -q "minio"; then
-    echo -e "✅ MinIO containers: ${GREEN}Running${NC}"
-    $_CRT ps --format "table {{.Names}}\t{{.Status}}" | grep minio
+  if $_CRT ps --format "table {{.Names}}\t{{.Status}}" | grep -q "floci"; then
+    echo -e "✅ Floci container: ${GREEN}Running${NC}"
+    $_CRT ps --format "table {{.Names}}\t{{.Status}}" | grep floci
   else
-    echo -e "❌ MinIO containers: ${RED}Not running${NC}"
+    echo -e "❌ Floci container: ${RED}Not running${NC}"
   fi
 
   if $_CRT ps --format "table {{.Names}}\t{{.Status}}" | grep -q "prometheus"; then
@@ -167,20 +168,13 @@ else
   echo -e "❌ Ray dashboard (8265): ${RED}Port not available${NC}"
 fi
 
-# Check MinIO API
-if is_port_in_use 9000; then
-  echo -e "✅ MinIO API (9000): ${GREEN}Port available${NC}"
-  check_service_health "http://localhost:9000" "MinIO API"
+# Check Floci S3 API
+resolve_floci_port
+if is_port_in_use "$FLOCI_PORT"; then
+  echo -e "✅ Floci S3 (${FLOCI_PORT}): ${GREEN}Port available${NC}"
+  check_service_health "${FLOCI_URL}/_floci/health" "Floci S3"
 else
-  echo -e "❌ MinIO API (9000): ${RED}Port not available${NC}"
-fi
-
-# Check MinIO Console
-if is_port_in_use 9001; then
-  echo -e "✅ MinIO Console (9001): ${GREEN}Port available${NC}"
-  check_service_health "http://localhost:9001" "MinIO Console"
-else
-  echo -e "❌ MinIO Console (9001): ${RED}Port not available${NC}"
+  echo -e "❌ Floci S3 (${FLOCI_PORT}): ${RED}Port not available${NC}"
 fi
 
 # Check Prometheus
@@ -222,7 +216,7 @@ echo
 echo -e "${BLUE}${BOLD}=== Status Summary ===${NC}"
 echo -e "Access URLs:"
 echo -e "- ${BLUE}Ray Dashboard:${NC} http://localhost:8265/"
-echo -e "- ${BLUE}MinIO Console:${NC} http://localhost:9001/"
+echo -e "- ${BLUE}Floci S3 API:${NC} ${FLOCI_URL}/"
 echo -e "- ${BLUE}Prometheus:${NC} http://localhost:9090/"
 echo -e "- ${BLUE}Grafana:${NC} http://localhost:3000/ (admin/admin)"
 echo -e "- ${BLUE}Streamlit App:${NC} http://localhost:8501/"

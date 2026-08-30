@@ -27,14 +27,30 @@ def test_is_port_open_false_for_closed_port():
 
 
 def test_is_port_open_false_for_unresolvable_host():
-    assert health.is_port_open("invalid.host.invalid", 9000, timeout=0.25) is False
+    assert health.is_port_open("invalid.host.invalid", 4566, timeout=0.25) is False
+
+
+def test_port_from_env_reads_the_variable(monkeypatch):
+    monkeypatch.setenv("FLOCI_PORT", "5566")
+    assert health.port_from_env("FLOCI_PORT", 4566) == 5566
+
+
+def test_port_from_env_falls_back_when_unset(monkeypatch):
+    monkeypatch.delenv("FLOCI_PORT", raising=False)
+    assert health.port_from_env("FLOCI_PORT", 4566) == 4566
+
+
+def test_port_from_env_falls_back_on_garbage(monkeypatch):
+    """A typo in .env must not crash the dashboard on import."""
+    monkeypatch.setenv("FLOCI_PORT", "not-a-number")
+    assert health.port_from_env("FLOCI_PORT", 4566) == 4566
 
 
 @pytest.mark.parametrize(
     ("check", "expected_port"),
     [
         (health.is_ray_running, health.RAY_DASHBOARD_PORT),
-        (health.is_minio_running, health.MINIO_PORT),
+        (health.is_floci_running, health.FLOCI_PORT),
     ],
 )
 def test_service_checks_use_expected_ports(monkeypatch, check, expected_port):

@@ -1,6 +1,6 @@
 # ML Homelab Quick Start Guide
 
-Get up and running with KubeRay, MinIO, and metrics monitoring in minutes!
+Get up and running with KubeRay, Floci, and metrics monitoring in minutes!
 
 ## Prerequisites
 
@@ -29,7 +29,7 @@ This single command will:
 - Check prerequisites and sync Python dependencies via `uv`
 - Create a local Kubernetes cluster (Kind)
 - Install KubeRay operator and Ray cluster
-- Start MinIO (S3-compatible storage)
+- Start Floci (S3-compatible storage)
 - Start Prometheus (metrics collection)
 - Start Grafana (metrics visualization)
 - Set up port forwarding for Ray services
@@ -42,8 +42,8 @@ This single command will:
 | **Ray Dashboard** | http://localhost:8265/ | Monitor Ray cluster, jobs, and tasks |
 | **Grafana** | http://localhost:3000/ | View metrics dashboards (admin/admin) |
 | **Prometheus** | http://localhost:9090/ | Query raw metrics data |
-| **Streamlit** | http://localhost:8501/ | ML job submission UI |
-| **MinIO** | http://localhost:9001/ | S3 storage console |
+| **Streamlit** | http://localhost:8501/ | ML job submission UI, S3 browser |
+| **Floci** | http://localhost:4566/ | S3 API (no console — browse it from the Streamlit S3 tab) |
 
 ## 4. Run Your First ML Job
 
@@ -80,7 +80,7 @@ Check that Docker/Podman is running and ports are available:
 lsof -i :8265  # Ray
 lsof -i :9090  # Prometheus
 lsof -i :3000  # Grafana
-lsof -i :9000  # MinIO
+lsof -i :4566  # Floci
 ```
 
 ### Check Detailed Status
@@ -107,7 +107,10 @@ make sync     # Sync Python dependencies with uv
 make start    # Start all services
 make stop     # Stop all services
 make status   # Check cluster status
-make run      # Run Streamlit only
+make run          # Run Streamlit in the foreground
+make app          # Run Streamlit in the background
+make services-up  # Floci + Prometheus + Grafana only
+make floci-up     # Floci (S3) only
 make job SCRIPT=examples/hello_ray_job.py  # Submit a Ray job
 ```
 
@@ -116,9 +119,10 @@ make job SCRIPT=examples/hello_ray_job.py  # Submit a Ray job
 Create a `.env` file to customize ports and credentials:
 
 ```env
-# MinIO
-MINIO_ROOT_USER=test-key
-MINIO_ROOT_PASSWORD=test-secret
+# Floci (S3) — any non-empty credentials are accepted
+AWS_ACCESS_KEY_ID=test
+AWS_SECRET_ACCESS_KEY=test
+AWS_ENDPOINT_URL_S3=http://localhost:4566
 
 # Prometheus
 PROMETHEUS_PORT=9090

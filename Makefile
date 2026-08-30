@@ -1,4 +1,9 @@
-.PHONY: run start stop status sync job test cov lint format typecheck check hooks dashboards
+.PHONY: sync run app app-stop \
+        services-up services-down services-status services-logs \
+        floci-up floci-down floci-logs \
+        kuberay-start kuberay-stop kuberay-status start stop status \
+        ray-setup ray-head ray-worker ray-stop ray-status \
+        job test cov lint format typecheck check hooks dashboards
 
 # torch ships as two mutually exclusive extras (cpu/gpu); this picks the one
 # matching the machine. Override with `make test TORCH_EXTRA=gpu`.
@@ -9,21 +14,85 @@ UV_RUN = scripts/uv-run.sh
 sync:
 	uv sync --extra $(TORCH_EXTRA)
 
-# Start Streamlit app only
+# --- Services: Floci (S3), Prometheus, Grafana -----------------------------
+# Independent of the Ray topology, so they get their own targets.
+
+services-up:
+	scripts/services.sh up
+
+services-down:
+	scripts/services.sh down
+
+services-status:
+	scripts/services.sh status
+
+services-logs:
+	scripts/services.sh logs
+
+# Floci on its own, for when you only want S3
+floci-up:
+	scripts/services.sh up floci
+
+floci-down:
+	scripts/services.sh down floci
+
+floci-logs:
+	scripts/services.sh logs floci
+
+# --- Streamlit dashboard ---------------------------------------------------
+
+app:
+	scripts/streamlit.sh start
+
+app-stop:
+	scripts/streamlit.sh stop
+
+# Run Streamlit in the foreground (Ctrl-C to quit)
 run:
 	$(UV_RUN) streamlit run streamlit_app/app.py
 
-# Start KubeRay cluster with all services
-start:
+# --- KubeRay topology: one machine, Ray on Kubernetes ----------------------
+# Brings up the Kind cluster, KubeRay, the Compose services, and Streamlit.
+
+kuberay-start:
 	scripts/kuberay-init.sh
 
-# Stop KubeRay cluster and all services
-stop:
+kuberay-stop:
 	scripts/kuberay-stop.sh
 
-# Check cluster status
-status:
+kuberay-status:
 	scripts/kuberay-status.sh
+
+# Back-compat aliases for the KubeRay topology
+start: kuberay-start
+stop: kuberay-stop
+status: kuberay-status
+
+# --- Standalone Ray topology: many machines, no Kubernetes -----------------
+# See docs/multi-machine.md. Does not touch Compose or Streamlit.
+
+# Prepare this machine to run a Ray node (head or worker)
+ray-setup:
+	scripts/ray-node-setup.sh
+
+# Start a native Ray head here, for workers on other machines to join
+ray-head:
+	scripts/ray-head-start.sh
+
+# Join this machine to a head. Usage: make ray-worker HEAD=192.168.1.10
+HEAD ?=
+ray-worker:
+	scripts/ray-worker-start.sh $(HEAD)
+
+# Stop the Ray node running on this machine
+ray-stop:
+	scripts/ray-node-stop.sh
+
+# Cluster membership and resources, from any node
+ray-status:
+	$(UV_RUN) ray status
+
+# --- Development -----------------------------------------------------------
 
 # Run the test suite
 test:

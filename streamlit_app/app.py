@@ -78,8 +78,8 @@ def render_status_header() -> None:
     """Render the service status and disk usage row."""
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.markdown(f"### 📦 MinIO (Port {health.MINIO_PORT})")
-        st.markdown(health.status_label(health.is_minio_running()))
+        st.markdown(f"### 📦 Floci S3 (Port {health.FLOCI_PORT})")
+        st.markdown(health.status_label(health.is_floci_running()))
     with col2:
         st.markdown(f"### 🦊 Ray (Port {health.RAY_DASHBOARD_PORT})")
         st.markdown(health.status_label(health.is_ray_running()))
@@ -161,17 +161,20 @@ def render_upload_form(client: Any, bucket: str) -> None:
 
 
 def render_storage_tab() -> None:
-    """Render the MinIO bucket browser."""
+    """Render the Floci bucket browser."""
     client = storage.create_client()
 
     try:
         bucket_names = storage.list_bucket_names(client)
     except Exception as exc:  # noqa: BLE001 - surfaced to the user
-        st.error(f"Failed to connect to S3/MinIO: {exc}")
+        st.error(f"Failed to connect to S3 (Floci): {exc}")
         bucket_names = []
 
     if not bucket_names:
-        st.info("No buckets found. Please create one using MinIO Console or AWS CLI.")
+        st.info(
+            "No buckets found. Create one with the AWS CLI: "
+            f"`aws s3 mb s3://my-bucket --endpoint-url {storage.DEFAULT_ENDPOINT_URL}`."
+        )
         return
 
     bucket = st.selectbox("Select a bucket to view contents", bucket_names)

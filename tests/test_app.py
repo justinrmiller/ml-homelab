@@ -114,7 +114,7 @@ def test_s3_connection_failure_is_surfaced(monkeypatch):
 
     at = AppTest.from_file(APP_PATH, default_timeout=APP_TIMEOUT).run()
 
-    assert any("Failed to connect to S3/MinIO" in e.value for e in at.error)
+    assert any("Failed to connect to S3 (Floci)" in e.value for e in at.error)
 
 
 def test_object_listing_failure_is_surfaced(monkeypatch, s3_client):

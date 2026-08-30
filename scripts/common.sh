@@ -118,3 +118,68 @@ kind_cmd() {
     kind "$@"
   fi
 }
+
+# Read one variable out of .env and echo it. The file is deliberately not
+# sourced: it also sets RAY_ADDRESS and friends, which have no business in
+# these shells. Precedence: the environment, then .env, then $2.
+#
+# The value is stripped of a trailing `# comment`, surrounding whitespace, and
+# one layer of matching quotes, so `NAME=value  # note` yields `value` rather
+# than the run-together `value#note` a plain `tr -d` produces.
+# .env may not exist yet on a first run, which is why $2 has to stand alone.
+env_value() {
+  local name=$1 default=$2 value
+  value="${!name-}"
+  if [ -z "$value" ] && [ -f "$PROJECT_ROOT/.env" ]; then
+    value="$(grep -E "^[[:space:]]*${name}=" "$PROJECT_ROOT/.env" | tail -1 | cut -d= -f2- \
+      | sed -e 's/[[:space:]]*#.*$//' \
+            -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' \
+            -e 's/^"\(.*\)"$/\1/' -e "s/^'\(.*\)'\$/\1/")"
+  fi
+  printf '%s' "${value:-$default}"
+}
+
+# Resolve the Kind cluster name once, so init/stop/status cannot disagree about
+# which cluster they are addressing. .env.example documents KIND_CLUSTER_NAME.
+resolve_kind_cluster_name() {
+  KIND_CLUSTER_NAME="$(env_value KIND_CLUSTER_NAME kind)"
+  KIND_NODE_CONTAINER="${KIND_CLUSTER_NAME}-control-plane"
+  KIND_CONTEXT="kind-${KIND_CLUSTER_NAME}"
+  export KIND_CLUSTER_NAME KIND_NODE_CONTAINER KIND_CONTEXT
+}
+
+# Host port the Floci S3 API is published on. docker-compose.yaml publishes
+# ${FLOCI_PORT:-4566}, so every probe has to agree with it or a non-default
+# port silently reports the service as down.
+resolve_floci_port() {
+  FLOCI_PORT="$(env_value FLOCI_PORT 4566)"
+  FLOCI_URL="http://localhost:${FLOCI_PORT}"
+  export FLOCI_PORT FLOCI_URL
+}
+
+# True only for an exact name match. `grep -Fx`, not a substring test: a cluster
+# named "kind-cluster" must not satisfy a lookup for "kind". It used to, which
+# is how a stale cluster could make init skip creation and stop delete nothing.
+kind_cluster_exists() {
+  kind_cmd get clusters 2>/dev/null | grep -qFx "$KIND_CLUSTER_NAME"
+}
+
+# Ask a Ray head's dashboard what version it is running. Echoes
+# "<ray_version> <ray_commit>", or nothing when the dashboard is unreachable.
+#
+# Parsed with sed rather than a JSON library on purpose: this runs before
+# `uv sync` has necessarily populated an environment on a fresh worker, so it
+# cannot depend on Python being available. The payload is flat, so this is safe.
+ray_head_version() {
+  local body
+  body="$(curl -sf --max-time 5 "$1/api/version" 2>/dev/null)" || return 1
+  printf '%s %s\n' \
+    "$(printf '%s' "$body" | sed -n 's/.*"ray_version": *"\([^"]*\)".*/\1/p')" \
+    "$(printf '%s' "$body" | sed -n 's/.*"ray_commit": *"\([^"]*\)".*/\1/p')"
+}
+
+# Ray version and commit of this checkout's synced environment.
+ray_local_version() {
+  "$PROJECT_ROOT/scripts/uv-run.sh" python -c \
+    'import ray; print(ray.__version__, ray.__commit__)' 2>/dev/null
+}

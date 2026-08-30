@@ -58,7 +58,10 @@ echo
 # Step 3: Stop Compose services
 echo -e "${YELLOW}Step 3/6: Stopping Compose services...${NC}"
 detect_container_runtime
-if $CONTAINER_RT ps | grep -q "minio"; then
+# Any one of the compose services being up means there is a stack to bring
+# down — keying off a single service left the others running whenever that one
+# had already died.
+if $CONTAINER_RT ps --format "{{.Names}}" | grep -qE "floci|prometheus|grafana"; then
   echo -e "Shutting down containers..."
   $COMPOSE_CMD down
   echo -e "✅ Compose services stopped"
@@ -91,12 +94,13 @@ echo
 
 # Step 6: Delete Kind cluster
 echo -e "${YELLOW}Step 6/6: Deleting Kind cluster...${NC}"
-if kind_cmd get clusters | grep -q "kind"; then
-  echo -e "Deleting Kind cluster..."
-  kind_cmd delete cluster
+resolve_kind_cluster_name
+if kind_cluster_exists; then
+  echo -e "Deleting Kind cluster '${KIND_CLUSTER_NAME}'..."
+  kind_cmd delete cluster --name "$KIND_CLUSTER_NAME"
   echo -e "✅ Kind cluster deleted"
 else
-  echo -e "No Kind cluster found to delete"
+  echo -e "No Kind cluster named '${KIND_CLUSTER_NAME}' found to delete"
 fi
 echo
 
@@ -113,6 +117,6 @@ echo -e "All services have been stopped and cleaned up."
 echo -e "- Kind cluster deleted"
 echo -e "- Helm releases uninstalled"
 echo -e "- Port forwarding stopped"
-echo -e "- MinIO containers stopped"
+echo -e "- Compose services stopped (Floci, Prometheus, Grafana)"
 echo -e "- Streamlit process terminated"
 echo

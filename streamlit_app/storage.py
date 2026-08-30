@@ -1,13 +1,18 @@
-"""MinIO/S3 helpers used by the dashboard's storage browser."""
+"""Floci/S3 helpers used by the dashboard's storage browser."""
 
 import os
 from typing import Any, BinaryIO, Literal
 
 import boto3
 
-DEFAULT_ENDPOINT_URL = "http://localhost:9000"
-DEFAULT_ACCESS_KEY = "minioadmin"
-DEFAULT_SECRET_KEY = "minioadmin"
+from streamlit_app import health
+
+# Derived from health.FLOCI_PORT rather than hardcoded, so that setting
+# FLOCI_PORT moves the compose port mapping, the status check, and this client
+# together instead of only the first.
+DEFAULT_ENDPOINT_URL = f"http://localhost:{health.FLOCI_PORT}"
+DEFAULT_ACCESS_KEY = "test"
+DEFAULT_SECRET_KEY = "test"
 
 TEXT_PREVIEW_EXTENSIONS = (".txt", ".csv", ".json")
 IMAGE_PREVIEW_EXTENSIONS = (".png", ".jpg", ".jpeg")
@@ -21,12 +26,14 @@ MIB = 1024**2
 
 
 def create_client() -> Any:
-    """Build an S3 client pointed at the configured MinIO endpoint."""
+    """Build an S3 client pointed at the configured Floci endpoint."""
     return boto3.client(
         "s3",
         endpoint_url=os.environ.get("AWS_ENDPOINT_URL_S3", DEFAULT_ENDPOINT_URL),
-        aws_access_key_id=os.environ.get("MINIO_ROOT_USER", DEFAULT_ACCESS_KEY),
-        aws_secret_access_key=os.environ.get("MINIO_ROOT_PASSWORD", DEFAULT_SECRET_KEY),
+        aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID", DEFAULT_ACCESS_KEY),
+        aws_secret_access_key=os.environ.get(
+            "AWS_SECRET_ACCESS_KEY", DEFAULT_SECRET_KEY
+        ),
     )
 
 

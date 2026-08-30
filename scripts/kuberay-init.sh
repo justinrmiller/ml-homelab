@@ -25,7 +25,7 @@ echo -e "${BLUE}${BOLD}=== KubeRay Cluster Initialization ===${NC}"
 echo -e "Starting KubeRay cluster setup...\n"
 
 # Step 1: Check prerequisites
-echo -e "${YELLOW}Step 1/7: Checking prerequisites...${NC}"
+echo -e "${YELLOW}Step 1/8: Checking prerequisites...${NC}"
 missing_deps=0
 
 # Check uv first — it's the foundation
@@ -88,14 +88,27 @@ echo -e "✅ All required prerequisites are installed\n"
 detect_container_runtime
 
 # Step 2: Create Kind cluster
-echo -e "${YELLOW}Step 2/7: Creating Kind cluster...${NC}"
-if kind_cmd get clusters | grep -q "kind"; then
-  echo -e "Kind cluster already exists, refreshing kubeconfig..."
-  kind_cmd export kubeconfig --name kind
+echo -e "${YELLOW}Step 2/8: Creating Kind cluster...${NC}"
+
+resolve_kind_cluster_name
+resolve_floci_port
+
+if kind_cluster_exists; then
+  echo -e "Kind cluster '${KIND_CLUSTER_NAME}' already exists, refreshing kubeconfig..."
+
+  # A cluster whose node container is stopped still appears in `get clusters`,
+  # so the exported kubeconfig would address a dead API server.
+  if ! $CONTAINER_RT ps --format "{{.Names}}" | grep -qFx "$KIND_NODE_CONTAINER"; then
+    echo -e "Node container ${KIND_NODE_CONTAINER} is not running, starting it..."
+    $CONTAINER_RT start "$KIND_NODE_CONTAINER" >/dev/null 2>&1 \
+      || echo -e "⚠️  Could not start ${KIND_NODE_CONTAINER}"
+  fi
+
+  kind_cmd export kubeconfig --name "$KIND_CLUSTER_NAME"
 else
-  echo -e "Creating Kind cluster with Kubernetes v1.35.0..."
-  kind_cmd create cluster --image=kindest/node:v1.35.0 --config="$PROJECT_ROOT/kind-config.yaml"
-  if [ $? -eq 0 ]; then
+  echo -e "Creating Kind cluster '${KIND_CLUSTER_NAME}' with Kubernetes v1.35.0..."
+  if kind_cmd create cluster --name "$KIND_CLUSTER_NAME" \
+    --image=kindest/node:v1.35.0 --config="$PROJECT_ROOT/kind-config.yaml"; then
     echo -e "✅ Kind cluster created successfully"
   else
     echo -e "❌ Failed to create Kind cluster"
@@ -108,14 +121,23 @@ fi
 # Ray head alone needs ~450 PIDs/threads. Bump the limit to avoid freezes.
 if [ "$CONTAINER_RT" = "podman" ]; then
   echo -e "Increasing PID limit on Kind node container..."
-  $CONTAINER_RT update --pids-limit 8192 kind-control-plane >/dev/null 2>&1 \
+  $CONTAINER_RT update --pids-limit 8192 "$KIND_NODE_CONTAINER" >/dev/null 2>&1 \
     && echo -e "✅ PID limit set to 8192" \
     || echo -e "⚠️  Could not update PID limit (may need manual fix)"
+fi
+
+# Surface an unreachable cluster here. Without this the run limps on to Step 3
+# and fails as `kubernetes cluster unreachable ... localhost:8080`, which says
+# nothing about the cluster actually being the problem.
+if ! kubectl cluster-info --context "$KIND_CONTEXT" >/dev/null 2>&1; then
+  echo -e "❌ Kind cluster '${KIND_CLUSTER_NAME}' is not reachable"
+  echo -e "   Recreate it with: kind delete cluster --name ${KIND_CLUSTER_NAME} && make start"
+  exit 1
 fi
 echo
 
 # Step 3: Install KubeRay operator
-echo -e "${YELLOW}Step 3/7: Installing KubeRay operator...${NC}"
+echo -e "${YELLOW}Step 3/8: Installing KubeRay operator...${NC}"
 # Keep KUBERAY_CHART_VERSION in sync with the ray-cluster chart version below.
 KUBERAY_CHART_VERSION="1.7.0"
 
@@ -144,10 +166,10 @@ else
 fi
 echo
 
-# Step 4: Start Prometheus, Grafana, and MinIO via Compose
+# Step 4: Start Prometheus, Grafana, and Floci via Compose
 echo -e "${YELLOW}Step 4/8: Starting services with ${COMPOSE_CMD}...${NC}"
-mkdir -p "$PROJECT_ROOT/data/prometheus" "$PROJECT_ROOT/data/grafana" "$PROJECT_ROOT/data/minio"
-chmod 777 "$PROJECT_ROOT/data/prometheus" "$PROJECT_ROOT/data/grafana"
+mkdir -p "$PROJECT_ROOT/data/prometheus" "$PROJECT_ROOT/data/grafana" "$PROJECT_ROOT/data/floci"
+chmod 777 "$PROJECT_ROOT/data/prometheus" "$PROJECT_ROOT/data/grafana" "$PROJECT_ROOT/data/floci"
 
 # Ensure .env exists — compose fails without it due to env_file directives
 if [ ! -f "$PROJECT_ROOT/.env" ]; then
@@ -157,8 +179,11 @@ if [ ! -f "$PROJECT_ROOT/.env" ]; then
   else
     echo -e "Creating minimal .env with defaults..."
     cat > "$PROJECT_ROOT/.env" <<'ENVEOF'
-MINIO_ROOT_USER=minioadmin
-MINIO_ROOT_PASSWORD=minioadmin
+AWS_ACCESS_KEY_ID=test
+AWS_SECRET_ACCESS_KEY=test
+AWS_DEFAULT_REGION=us-east-1
+AWS_ENDPOINT_URL_S3=http://localhost:4566
+FLOCI_PORT=4566
 ENVEOF
   fi
 fi
@@ -201,7 +226,10 @@ if [ "$CONTAINER_RT" = "podman" ] && [[ "$COMPOSE_CMD" == "podman-compose" ]]; t
   podman pod rm -f "$_pod_name" 2>/dev/null || true
 fi
 
-(cd "$PROJECT_ROOT" && $COMPOSE_CMD up -d)
+# Delegated so `make services-up` and `make kuberay-start` share one
+# implementation. The kind-network wiring below stays here: it is specific to
+# this topology and needs the Kind cluster to already exist.
+"$SCRIPT_DIR/services.sh" up
 echo -e "⏳ Waiting for services to initialize..."
 sleep 10
 
@@ -264,11 +292,26 @@ else
 fi
 echo -e "Deploying Ray cluster for ${ARCH} architecture (image: ${RAY_IMAGE_TAG})..."
 
-# Generate overrides file for arch + metrics service IPs
+# .env.example documents these two; honour them instead of leaving them inert.
+# The values file explains the CPU/memory budget these have to fit inside.
+NUM_CPU_WORKERS="$(env_value NUM_CPU_WORKERS 2)"
+NUM_CPUS_PER_WORKER="$(env_value NUM_CPUS_PER_WORKER 2)"
+echo -e "Worker group: ${NUM_CPU_WORKERS} x ${NUM_CPUS_PER_WORKER} CPU"
+
+# Generate overrides file for arch, metrics service IPs, and worker sizing.
+# Helm deep-merges values files, so setting only cpu here leaves the memory
+# limits from ray-cluster-values.yaml intact.
 OVERRIDE_VALUES=$(mktemp)
 cat > "$OVERRIDE_VALUES" <<EOF
 image:
   tag: ${RAY_IMAGE_TAG}
+worker:
+  replicas: ${NUM_CPU_WORKERS}
+  resources:
+    limits:
+      cpu: "${NUM_CPUS_PER_WORKER}"
+    requests:
+      cpu: "${NUM_CPUS_PER_WORKER}"
 head:
   containerEnv:
     - name: RAY_GRAFANA_HOST
@@ -281,7 +324,16 @@ head:
       value: "Prometheus"
 EOF
 
+# --force-conflicts is required for re-runs, not optional. The health-probe
+# patch below uses `kubectl patch`, which registers a second field manager
+# ("kubectl-patch") owning part of .spec.workerGroupSpecs. Helm 4 applies
+# server-side, so the next upgrade fails with:
+#   Apply failed with 1 conflict: conflict with "kubectl-patch"
+# The chart exposes no probe settings, so the patch cannot be folded into
+# values. Forcing lets Helm reclaim those fields; the patch immediately after
+# re-applies the probes, which is the same order a fresh install runs in.
 helm $HELM_CMD raycluster kuberay/ray-cluster --version "$KUBERAY_CHART_VERSION" \
+  --force-conflicts \
   -f "$HELM_VALUES" \
   -f "$OVERRIDE_VALUES"
 HELM_EXIT=$?
@@ -369,9 +421,11 @@ echo
 
 # Step 7: Verify compose services
 echo -e "${YELLOW}Step 7/8: Verifying services...${NC}"
-curl -s -o /dev/null http://localhost:9000 && echo -e "✅ MinIO is accessible" || echo -e "⚠️ MinIO may not be accessible"
-curl -s -o /dev/null http://localhost:9090/-/healthy && echo -e "✅ Prometheus is healthy" || echo -e "⚠️ Prometheus may not be healthy"
-curl -s -o /dev/null http://localhost:3000/api/health && echo -e "✅ Grafana is healthy" || echo -e "⚠️ Grafana may not be healthy"
+# -f matters: without it curl exits 0 for any response, so a service answering
+# 500 on its health endpoint would still be reported healthy.
+curl -sf -o /dev/null "${FLOCI_URL}/_floci/health" && echo -e "✅ Floci is healthy" || echo -e "⚠️ Floci may not be healthy"
+curl -sf -o /dev/null http://localhost:9090/-/healthy && echo -e "✅ Prometheus is healthy" || echo -e "⚠️ Prometheus may not be healthy"
+curl -sf -o /dev/null http://localhost:3000/api/health && echo -e "✅ Grafana is healthy" || echo -e "⚠️ Grafana may not be healthy"
 echo
 
 # Step 8: Setup port forwarding and start Streamlit
@@ -445,9 +499,9 @@ echo -e "Starting Streamlit app..."
 if is_port_in_use 8501; then
   echo -e "Streamlit seems to be already running on port 8501"
 else
-  echo -e "Starting Streamlit app with uv..."
-  (cd "$PROJECT_ROOT" && uv run streamlit run streamlit_app/app.py) &
-  STREAMLIT_PID=$!
+  # Delegated so `make app` and `make kuberay-start` start it the same way.
+  "$SCRIPT_DIR/streamlit.sh" start
+  STREAMLIT_PID=$(cat /tmp/kuberay-streamlit.pid 2>/dev/null)
   echo -e "⏳ Waiting for Streamlit to initialize..."
   sleep 5
 fi
@@ -466,7 +520,7 @@ echo
 echo -e "${GREEN}${BOLD}=== KubeRay Cluster started successfully! ===${NC}"
 echo -e "All services are now running. You can access:"
 echo -e "- ${BLUE}Ray Dashboard:${NC} http://localhost:8265/"
-echo -e "- ${BLUE}MinIO Console:${NC} http://localhost:9001/ (credentials from .env)"
+echo -e "- ${BLUE}Floci S3 API:${NC} ${FLOCI_URL}/ (browse it from the Streamlit S3 tab)"
 echo -e "- ${BLUE}Prometheus:${NC} http://localhost:9090/"
 echo -e "- ${BLUE}Grafana:${NC} http://localhost:3000/ (admin/admin)"
 echo -e "- ${BLUE}Streamlit Dashboard:${NC} http://localhost:8501/"
@@ -485,16 +539,13 @@ echo -e "${YELLOW}Note:${NC} To stop all services, run: make stop"
 echo -e "${YELLOW}Note:${NC} To check cluster status, run: make status"
 echo -e "${YELLOW}Note:${NC} Port forwarding PID: $RAY_PORT_FORWARD_PID (auto-reconnects on pod restarts)"
 
-# Store PIDs for cleanup
+# Store the port-forward PID for cleanup. scripts/streamlit.sh owns
+# /tmp/kuberay-streamlit.pid and writes it itself.
 echo $RAY_PORT_FORWARD_PID > /tmp/kuberay-port-forward.pid
-if [ ! -z "$STREAMLIT_PID" ]; then
-  echo $STREAMLIT_PID > /tmp/kuberay-streamlit.pid
-fi
 
-# Wait for Ctrl+C — keep the script alive so port-forward loop keeps running
+# Wait for Ctrl+C — keep the script alive so the port-forward loop keeps
+# running. Wait on the loop specifically: it is the only child of this shell.
+# Streamlit is daemonized by scripts/streamlit.sh and outlives this script, so
+# waiting on its PID fails with "not a child of this shell" (exit 127).
 trap "pkill -f kuberay-port-forward-loop 2>/dev/null; kill $RAY_PORT_FORWARD_PID 2>/dev/null; exit 0" INT TERM
-if [ ! -z "$STREAMLIT_PID" ]; then
-  wait $STREAMLIT_PID
-else
-  wait $RAY_PORT_FORWARD_PID
-fi
+wait "$RAY_PORT_FORWARD_PID"

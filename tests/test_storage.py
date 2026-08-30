@@ -1,4 +1,4 @@
-"""Tests for the MinIO/S3 helper layer."""
+"""Tests for the Floci/S3 helper layer."""
 
 import io
 
@@ -17,14 +17,14 @@ def test_create_client_uses_environment(monkeypatch):
         return object()
 
     monkeypatch.setattr(storage.boto3, "client", fake_boto_client)
-    monkeypatch.setenv("AWS_ENDPOINT_URL_S3", "http://minio:9000")
-    monkeypatch.setenv("MINIO_ROOT_USER", "user")
-    monkeypatch.setenv("MINIO_ROOT_PASSWORD", "secret")
+    monkeypatch.setenv("AWS_ENDPOINT_URL_S3", "http://floci:4566")
+    monkeypatch.setenv("AWS_ACCESS_KEY_ID", "user")
+    monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "secret")
 
     storage.create_client()
 
     assert captured["service"] == "s3"
-    assert captured["endpoint_url"] == "http://minio:9000"
+    assert captured["endpoint_url"] == "http://floci:4566"
     assert captured["aws_access_key_id"] == "user"
     assert captured["aws_secret_access_key"] == "secret"
 
@@ -34,7 +34,7 @@ def test_create_client_falls_back_to_defaults(monkeypatch):
     monkeypatch.setattr(
         storage.boto3, "client", lambda service, **kwargs: captured.update(kwargs)
     )
-    for var in ("AWS_ENDPOINT_URL_S3", "MINIO_ROOT_USER", "MINIO_ROOT_PASSWORD"):
+    for var in ("AWS_ENDPOINT_URL_S3", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"):
         monkeypatch.delenv(var, raising=False)
 
     storage.create_client()
@@ -127,7 +127,7 @@ def test_read_text_preview_survives_invalid_utf8(s3_client):
 def test_presigned_download_url(s3_client):
     url = storage.presigned_download_url(s3_client, "models", "notes.txt")
     assert url == (
-        "https://minio.test/get_object/models/notes.txt"
+        "https://floci.test/get_object/models/notes.txt"
         f"?expires={storage.PRESIGNED_URL_TTL}"
     )
 
