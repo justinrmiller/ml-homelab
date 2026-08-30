@@ -140,7 +140,11 @@ def build_tuner(args: argparse.Namespace) -> tune.Tuner:
     """Build the Ray Tune tuner for the MNIST search."""
     # AsyncHyperBandScheduler gives us early stopping of unpromising trials.
     sched = AsyncHyperBandScheduler()
-    resources_per_trial: dict[str, float] = {"cpu": 2.0, "gpu": float(args.cuda)}
+    # One CPU per trial rather than two: the Kind cluster has four worker CPUs
+    # and the job driver reserves one of them, so two-CPU trials would run one
+    # at a time with a core stranded. This is a two-layer ConvNet over 512
+    # samples an epoch; it does not need the second core.
+    resources_per_trial: dict[str, float] = {"cpu": 1.0, "gpu": float(args.cuda)}
 
     return tune.Tuner(
         tune.with_resources(train_mnist, resources=resources_per_trial),

@@ -160,6 +160,14 @@ uv run ray job submit --address http://localhost:8265 --working-dir . -- python 
 make job SCRIPT=your_script.py
 ```
 
+> **`--entrypoint-num-cpus` is not optional here.** A submission that requests
+> no resources gets a head-node label selector, so Ray runs the driver on the
+> head — a 2.5Gi pod that Ray's own dashboard subprocesses already half fill.
+> A driver that imports torch there pushes the node past Ray's 95% memory
+> threshold and workers get OOM-killed mid-job. Reserving a CPU drops the
+> selector, and since the head advertises `num-cpus: 0` the driver lands on a
+> worker. `make job` and the Streamlit dashboard both pass it already.
+
 ### Monitoring and Management
 
 ```bash

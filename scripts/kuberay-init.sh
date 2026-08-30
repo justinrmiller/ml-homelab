@@ -67,9 +67,13 @@ if ! command_exists docker && ! command_exists podman; then
   missing_deps=1
 fi
 
-# Ensure Python dependencies are synced (uv handles venv automatically)
+# Ensure Python dependencies are synced (uv handles venv automatically).
+# --extra is not decoration: torch only exists inside the cpu/gpu extras, so a
+# bare `uv sync` prunes it back out of the venv on every run of this script and
+# the host-side test suite stops collecting. Same resolution as `make sync`.
 echo -e "Syncing Python dependencies with uv..."
-(cd "$PROJECT_ROOT" && uv sync --quiet)
+TORCH_EXTRA_RESOLVED="$("$SCRIPT_DIR/torch-extra.sh")"
+(cd "$PROJECT_ROOT" && uv sync --quiet --extra "$TORCH_EXTRA_RESOLVED")
 if [ $? -eq 0 ]; then
   echo -e "✅ Python dependencies synced"
 else

@@ -40,13 +40,21 @@ head:
   # and --memory from the *limits*, so a lower request lets Ray believe it owns
   # capacity Kubernetes never guaranteed it, and the node oversubscribes.
   # Matching them also gives the pod Guaranteed QoS.
+  #
+  # 2Gi was not enough. Ray 2.58 runs each dashboard module as its own process
+  # (ServeHead, DataHead, JobHead, MetricsHead, ...) at ~120-220MB apiece, so
+  # an idle head already sits near 1.5GB — close enough to Ray's 95% OOM
+  # threshold that anything else scheduled there gets a worker killed. Job
+  # drivers now run on the workers (see ENTRYPOINT_NUM_CPUS in
+  # streamlit_app/job_runner.py); this leaves the head roughly 1GB of slack for
+  # its own growth.
   resources:
     limits:
       cpu: "500m"
-      memory: "2Gi"
+      memory: "2560Mi"
     requests:
       cpu: "500m"
-      memory: "2Gi"
+      memory: "2560Mi"
 
 # Sized for the default single-node Kind cluster. The whole budget is the
 # container VM (podman machine / Docker Desktop), and Kubernetes' own system
@@ -55,6 +63,11 @@ head:
 # On a 6 CPU / 11GiB VM that leaves ~4950m, so the head takes 500m and the two
 # workers 2000m each: 4500m total, with headroom. Ray gets 4 CPUs of actual
 # compute, all of it on the workers.
+#
+# Memory works out to 2.5Gi (head) + 2 x 3Gi = 8.5Gi of the ~10.8Gi the node
+# reports allocatable, leaving ~1.5Gi. The workers hold the whole job: the
+# driver reserves one CPU on one of them and each Tune trial takes another,
+# so a worker may be running a driver plus a torch trial at once.
 #
 # Do not raise the head to a full CPU without lowering the workers — 500m +
 # (2 x 2000m) + 1050m system already comes to 5550m of 6000m.

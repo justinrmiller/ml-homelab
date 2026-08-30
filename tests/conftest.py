@@ -101,9 +101,20 @@ class FakeJobClient:
         self.status_calls = 0
         self.log_calls = 0
 
-    def submit_job(self, entrypoint: str, runtime_env: dict[str, Any]) -> str:
+    def submit_job(
+        self,
+        entrypoint: str,
+        runtime_env: dict[str, Any],
+        entrypoint_num_cpus: float | None = None,
+    ) -> str:
         """Record a submission and return a fixed job id."""
-        self.submitted.append({"entrypoint": entrypoint, "runtime_env": runtime_env})
+        self.submitted.append(
+            {
+                "entrypoint": entrypoint,
+                "runtime_env": runtime_env,
+                "entrypoint_num_cpus": entrypoint_num_cpus,
+            }
+        )
         return "job_abc123"
 
     def get_job_status(self, job_id: str) -> JobStatus:

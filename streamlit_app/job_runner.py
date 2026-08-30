@@ -16,6 +16,15 @@ from ray.job_submission import JobStatus, JobSubmissionClient
 
 RAY_DASHBOARD_URL = "http://localhost:8265"
 DEFAULT_WORKING_DIR = "./streamlit_app/jobs"
+# CPUs reserved for the job's driver process. This is not really about CPU: a
+# submission that asks for no resources gets a head-node label selector, which
+# pins the driver to the head. Ray 2.58 runs each dashboard module as its own
+# process, which already claims most of the head pod's memory, so a driver that
+# imports torch there OOM-kills the node. Any non-zero request drops the selector, and since the head advertises
+# 0 CPUs the driver lands on a worker instead. The trade-off is that a job
+# submitted to a cluster whose workers are not up yet waits for one instead of
+# running on the head.
+ENTRYPOINT_NUM_CPUS = 1
 DEFAULT_POLL_INTERVAL = 5.0
 LOG_TAIL_CHARS = 1024
 
@@ -97,6 +106,7 @@ def submit_job(
     return client.submit_job(
         entrypoint=spec.entrypoint,
         runtime_env=load_runtime_env(working_dir, spec.runtime_env_file),
+        entrypoint_num_cpus=ENTRYPOINT_NUM_CPUS,
     )
 
 

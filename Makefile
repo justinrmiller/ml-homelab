@@ -133,5 +133,10 @@ hooks:
 #   make job SCRIPT=resnet_inference/inference.py RUNTIME_ENV=resnet_inference/runtime_env.yaml
 RUNTIME_ENV ?=
 _RUNTIME_ENV_FLAG = $(if $(RUNTIME_ENV),--runtime-env $(RUNTIME_ENV),)
+# Reserving a CPU for the entrypoint is what keeps the driver off the head
+# node, which is too small to host one. See ENTRYPOINT_NUM_CPUS in
+# streamlit_app/job_runner.py for the whole story.
+ENTRYPOINT_NUM_CPUS ?= 1
 job:
-	$(UV_RUN) ray job submit --address http://localhost:8265 --working-dir . $(_RUNTIME_ENV_FLAG) -- python $(SCRIPT)
+	$(UV_RUN) ray job submit --address http://localhost:8265 --working-dir . \
+		--entrypoint-num-cpus $(ENTRYPOINT_NUM_CPUS) $(_RUNTIME_ENV_FLAG) -- python $(SCRIPT)

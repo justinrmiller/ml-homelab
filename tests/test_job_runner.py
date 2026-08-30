@@ -66,8 +66,18 @@ def test_submit_job_sends_entrypoint_and_runtime_env(tmp_path):
         {
             "entrypoint": "python demo.py",
             "runtime_env": {"working_dir": str(tmp_path), "pip": ["torch"]},
+            "entrypoint_num_cpus": job_runner.ENTRYPOINT_NUM_CPUS,
         }
     ]
+
+
+def test_submit_job_reserves_cpus_to_keep_the_driver_off_the_head(tmp_path):
+    """A zero-resource submission would be pinned to the head node."""
+    client = FakeJobClient([JobStatus.SUCCEEDED])
+
+    job_runner.submit_job(client, JobSpec("demo", "python demo.py"), str(tmp_path))
+
+    assert client.submitted[0]["entrypoint_num_cpus"] > 0
 
 
 @pytest.mark.parametrize(
