@@ -1,5 +1,6 @@
 """Streamlit dashboard for the ML homelab."""
 
+import base64
 import os
 import sys
 from collections.abc import Iterable
@@ -50,6 +51,17 @@ CSS = """
 
 st.markdown(CSS, unsafe_allow_html=True)
 
+# The Ray logo is an SVG rather than an emoji, so it rides into the heading as a
+# base64 data URI: Streamlit sanitizes inline <svg> out of markdown, but leaves
+# an <img> with a data source alone.
+_RAY_LOGO = base64.b64encode(
+    (Path(__file__).parent / "assets" / "ray-logo.svg").read_bytes()
+).decode()
+RAY_LOGO_IMG = (
+    f'<img src="data:image/svg+xml;base64,{_RAY_LOGO}" alt="Ray"'
+    ' style="height:1em;width:1em;vertical-align:-0.12em;">'
+)
+
 
 def render_job(spec: JobSpec) -> None:
     """Render the run button for a job and stream its progress once clicked."""
@@ -81,7 +93,10 @@ def render_status_header() -> None:
         st.markdown(f"### 📦 Floci S3 (Port {health.FLOCI_PORT})")
         st.markdown(health.status_label(health.is_floci_running()))
     with col2:
-        st.markdown(f"### 🦊 Ray (Port {health.RAY_DASHBOARD_PORT})")
+        st.markdown(
+            f"<h3>{RAY_LOGO_IMG} Ray (Port {health.RAY_DASHBOARD_PORT})</h3>",
+            unsafe_allow_html=True,
+        )
         st.markdown(health.status_label(health.is_ray_running()))
     with col3:
         st.markdown("### 📁 Disk Space")
