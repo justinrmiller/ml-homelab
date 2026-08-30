@@ -74,7 +74,7 @@ class FakeS3Client:
     ) -> str:
         """Return a deterministic fake presigned URL."""
         return (
-            f"https://minio.test/{operation}/{Params['Bucket']}/{Params['Key']}"
+            f"https://floci.test/{operation}/{Params['Bucket']}/{Params['Key']}"
             f"?expires={ExpiresIn}"
         )
 

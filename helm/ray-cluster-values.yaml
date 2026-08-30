@@ -15,6 +15,10 @@ head:
     ray-client-server-port: "10001"
     dashboard-host: "0.0.0.0"
     metrics-export-port: "8080"
+    # The head coordinates; it should not also compete for work. Advertising 0
+    # CPUs keeps tasks on the workers, which is what the CPU budget below
+    # assumes. Ray still runs the GCS, dashboard, and autoscaler here.
+    num-cpus: "0"
   containerEnv:
     # RAY_GRAFANA_HOST: used server-side by the dashboard to proxy Grafana requests.
     # RAY_GRAFANA_IFRAME_HOST: used client-side (browser) for Grafana iframe URLs.
@@ -32,18 +36,41 @@ head:
       value: "http://localhost:3000"
     - name: RAY_PROMETHEUS_NAME
       value: "Prometheus"
+  # requests == limits on purpose. KubeRay derives Ray's advertised --num-cpus
+  # and --memory from the *limits*, so a lower request lets Ray believe it owns
+  # capacity Kubernetes never guaranteed it, and the node oversubscribes.
+  # Matching them also gives the pod Guaranteed QoS.
   resources:
     limits:
-      cpu: "4"
-      memory: "8G"
+      cpu: "500m"
+      memory: "2Gi"
     requests:
-      cpu: "2"
-      memory: "4G"
+      cpu: "500m"
+      memory: "2Gi"
+
+# Sized for the default single-node Kind cluster. The whole budget is the
+# container VM (podman machine / Docker Desktop), and Kubernetes' own system
+# pods need about 1050m CPU of it, measured with:
+#   kubectl describe node kind-control-plane | sed -n '/Allocated resources/,/Events/p'
+# On a 6 CPU / 11GiB VM that leaves ~4950m, so the head takes 500m and the two
+# workers 2000m each: 4500m total, with headroom. Ray gets 4 CPUs of actual
+# compute, all of it on the workers.
+#
+# Do not raise the head to a full CPU without lowering the workers — 500m +
+# (2 x 2000m) + 1050m system already comes to 5550m of 6000m.
+#
+# Raising these past what the VM has does not fail loudly — the Ray pods simply
+# sit in Pending forever. Check the VM's size first:
+#   podman machine list          (or: docker info | grep -E 'CPUs|Total Memory')
+#
+# replicas and the worker CPU count are overridden at deploy time from
+# NUM_CPU_WORKERS and NUM_CPUS_PER_WORKER in .env; see scripts/kuberay-init.sh.
 worker:
+  replicas: 2
   resources:
     limits:
-      cpu: "4"
-      memory: "8G"
+      cpu: "2"
+      memory: "3Gi"
     requests:
       cpu: "2"
-      memory: "4G"
+      memory: "3Gi"

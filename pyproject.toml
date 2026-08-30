@@ -1,7 +1,7 @@
 [project]
 name = "ml-homelab"
 version = "0.1.0"
-description = "Local ML workflow orchestration with KubeRay, Streamlit, and MinIO"
+description = "Local ML workflow orchestration with KubeRay, Streamlit, and Floci"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 dependencies = [

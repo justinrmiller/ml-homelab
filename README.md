@@ -1,6 +1,6 @@
 # ML Homelab
 
-A local development environment for orchestrating, training, and visualizing machine learning workflows using KubeRay and Streamlit. This project provides a reproducible setup for running distributed ML experiments on Kubernetes, with S3-compatible storage via MinIO and metrics monitoring via Prometheus and Grafana.
+A local development environment for orchestrating, training, and visualizing machine learning workflows using KubeRay and Streamlit. This project provides a reproducible setup for running distributed ML experiments on Kubernetes, with S3-compatible storage via Floci and metrics monitoring via Prometheus and Grafana.
 
 ---
 
@@ -9,13 +9,16 @@ A local development environment for orchestrating, training, and visualizing mac
 ```
 .
 ├── data/                        # Data storage for services (auto-created)
-│   ├── minio/                   # MinIO S3-compatible storage
+│   ├── floci/                   # Floci S3-compatible storage
 │   ├── prometheus/              # Prometheus time-series data
 │   └── grafana/                 # Grafana configuration data
 ├── docs/                        # Documentation
-│   └── kuberay-setup.md         # KubeRay setup and usage guide
+│   ├── kuberay-setup.md         # KubeRay setup and usage guide
+│   └── multi-machine.md         # Multi-machine Ray cluster guide
 ├── config/                      # Configuration files
 │   ├── prometheus.yml           # Prometheus scrape configuration
+│   ├── floci/                   # Floci provisioning
+│   │   └── init/ready.d/        # Startup hooks (creates the S3 buckets)
 │   └── grafana/                 # Grafana provisioning
 │       └── provisioning/
 │           ├── dashboards/
@@ -27,13 +30,19 @@ A local development environment for orchestrating, training, and visualizing mac
 │   └── ray-cluster-values.yaml  # KubeRay cluster Helm values
 ├── scripts/                     # Shell scripts for cluster management
 │   ├── common.sh                # Shared utilities and runtime detection
+│   ├── services.sh              # Compose services (Floci, Prometheus, Grafana)
+│   ├── streamlit.sh             # Streamlit dashboard start/stop
 │   ├── kuberay-init.sh          # KubeRay cluster initialization
 │   ├── kuberay-stop.sh          # KubeRay cluster shutdown
-│   └── kuberay-status.sh        # KubeRay cluster status check
+│   ├── kuberay-status.sh        # KubeRay cluster status check
+│   ├── ray-node-setup.sh        # Prepare a machine to run a Ray node
+│   ├── ray-head-start.sh        # Native Ray head (multi-machine topology)
+│   ├── ray-worker-start.sh      # Join a machine to a Ray head
+│   └── ray-node-stop.sh         # Stop this machine's Ray node
 ├── streamlit_app/               # Streamlit dashboard app
 │   ├── app.py                   # Streamlit UI (rendering only)
 │   ├── health.py                # Service health and disk checks
-│   ├── storage.py               # MinIO/S3 helpers
+│   ├── storage.py               # Floci/S3 helpers
 │   ├── job_runner.py            # Ray Jobs API submission and polling
 │   └── jobs/                    # ML jobs for Ray execution
 │       ├── mnist_training/      # MNIST example job
@@ -48,7 +57,7 @@ A local development environment for orchestrating, training, and visualizing mac
 ├── examples/                    # Standalone Ray examples
 │   ├── hello_ray_job.py         # Simple Ray job
 │   └── ray_job_example.py       # Job submission via the Ray Jobs API
-├── docker-compose.yaml          # MinIO, Prometheus, Grafana orchestration
+├── docker-compose.yaml          # Floci, Prometheus, Grafana orchestration
 ├── kind-config.yaml             # Kind cluster configuration
 ├── pyproject.toml               # Python project config (managed by uv)
 ├── uv.lock                      # Locked dependencies (committed to git)
@@ -77,20 +86,26 @@ A local development environment for orchestrating, training, and visualizing mac
 - **Purpose:** Interactive dashboard for cluster status and S3 browsing.
 - **Location:** [`streamlit_app/app.py`](streamlit_app/app.py)
 - **Features:**
-  - Check Ray cluster status and MinIO status
+  - Check Ray cluster status and Floci status
   - Browse and manage S3 buckets and files
   - Upload and download files from S3
   - Submit and monitor Ray jobs via UI
   - View system disk usage
 
-### 3. **MinIO**
-- **Purpose:** S3-compatible object storage system for local development.
+### 3. **Floci**
+- **Purpose:** S3-compatible object storage for local development. Floci is a
+  local AWS emulator; only its S3 service is used here.
 - **Configured in:** [`docker-compose.yaml`](docker-compose.yaml)
-- **Default credentials:** minioadmin/minioadmin (configurable via `.env`)
-- **Buckets:** app-bucket (public), ray-bucket
-- **Ports:**
-  - MinIO Server: 9000
-  - Web Console: 9001
+- **Credentials:** any non-empty pair works (`.env` ships `test`/`test`)
+- **Buckets:** app-bucket (public), ray-bucket — created on boot by
+  [`config/floci/init/ready.d/01-create-buckets.sh`](config/floci/init/ready.d/01-create-buckets.sh)
+- **Storage:** `FLOCI_STORAGE_MODE=persistent`, backed by `data/floci/`
+- **Port:** 4566 (S3 API), published on `127.0.0.1` only. Floci accepts any
+  non-empty credential and does not verify signatures, so binding it to all
+  interfaces would expose every bucket to the network; override with
+  `FLOCI_BIND_HOST` only on a network you trust.
+- Floci is API-only — there is no web console; browse buckets from the
+  Streamlit dashboard's S3 tab.
 
 ### 4. **Prometheus**
 - **Purpose:** Metrics collection and time-series database for monitoring Ray cluster.
@@ -161,7 +176,7 @@ The following tools will be auto-installed via Homebrew if missing:
    - Verify `uv` and sync Python dependencies
    - Create a Kind Kubernetes cluster
    - Install KubeRay operator and Ray cluster
-   - Start MinIO, Prometheus, and Grafana via Docker/Podman Compose
+   - Start Floci, Prometheus, and Grafana via Docker/Podman Compose
    - Set up port forwarding for Ray services
    - Start the Streamlit dashboard
 
@@ -173,7 +188,7 @@ The following tools will be auto-installed via Homebrew if missing:
 6. **Access services:**
    - **Ray Dashboard:** http://localhost:8265/
    - **Streamlit Dashboard:** http://localhost:8501/
-   - **MinIO Console:** http://localhost:9001/ (default: minioadmin/minioadmin)
+   - **Floci S3 API:** http://localhost:4566/ (no console — use the Streamlit S3 tab)
    - **Prometheus:** http://localhost:9090/
    - **Grafana:** http://localhost:3000/ (default: admin/admin)
 
@@ -181,6 +196,32 @@ The following tools will be auto-installed via Homebrew if missing:
    ```sh
    make stop
    ```
+
+### Make targets
+
+The targets are grouped so each piece can be driven on its own.
+
+| Group | Targets |
+|---|---|
+| Services (Floci, Prometheus, Grafana) | `services-up`, `services-down`, `services-status`, `services-logs` |
+| Floci alone | `floci-up`, `floci-down`, `floci-logs` |
+| Streamlit | `app` (background), `app-stop`, `run` (foreground) |
+| KubeRay topology | `kuberay-start`, `kuberay-stop`, `kuberay-status` |
+| Standalone Ray topology | `ray-setup`, `ray-head`, `ray-worker HEAD=<ip>`, `ray-stop`, `ray-status` |
+| Development | `sync`, `test`, `cov`, `lint`, `format`, `typecheck`, `check`, `hooks`, `dashboards` |
+
+`start`, `stop`, and `status` remain aliases for the KubeRay targets.
+
+### Two topologies
+
+- **KubeRay** (`make start`) — one machine, Ray on Kubernetes via Kind, with
+  Prometheus and Grafana wired into the Ray dashboard. This is the default.
+- **Standalone Ray** (`make ray-head` / `make ray-worker`) — several machines
+  on a LAN running Ray natively, no Kubernetes. Every node syncs the same
+  pinned environment from this repo so the Ray and Python versions match
+  exactly. See [docs/multi-machine.md](docs/multi-machine.md).
+
+Run one or the other; they contend for ports 6379 and 8265.
 
 For detailed KubeRay setup instructions, see [docs/kuberay-setup.md](docs/kuberay-setup.md).
 
@@ -251,8 +292,8 @@ For detailed KubeRay setup instructions, see [docs/kuberay-setup.md](docs/kubera
         v                                           v
 +-------+-------------------------------------------+-------+
 |                                                           |
-|                     MinIO Storage                         |
-|                  (Ports 9000/9001)                        |
+|                     Floci Storage                         |
+|                      (Port 4566)                          |
 |                                                           |
 +-----------------------------------------------------------+
 ```
@@ -262,8 +303,7 @@ For detailed KubeRay setup instructions, see [docs/kuberay-setup.md](docs/kubera
 - **Ray Metrics Export** (Port 8080): Exports Prometheus-compatible metrics
 - **Prometheus** (Port 9090): Collects and stores time-series metrics from Ray
 - **Grafana** (Port 3000): Visualizes Ray metrics with pre-built dashboards
-- **MinIO Server** (Port 9000): S3-compatible API endpoint
-- **MinIO Console** (Port 9001): Web UI for MinIO management
+- **Floci** (Port 4566): S3-compatible API endpoint
 
 ### Job Monitoring
 
@@ -300,9 +340,9 @@ Grafana provides visual dashboards for Ray metrics at http://localhost:3000/ (ad
 ### Streamlit Dashboard
 
 - Use the dashboard to:
-  - Check Ray and MinIO service status
+  - Check Ray and Floci service status
   - View system disk usage
-  - Browse and manage S3 buckets and files in MinIO
+  - Browse and manage S3 buckets and files in Floci
   - Upload and download files from S3 buckets
   - Submit and monitor Ray jobs for training and inference
 
@@ -364,7 +404,7 @@ CI fails rather than letting them drift.
 Coverage is configured in `pyproject.toml` and fails below **95%**. The suite
 covers the health checks, the S3 helpers, runtime-environment assembly and job
 polling, both Ray job scripts, and the Streamlit UI itself via
-`streamlit.testing.v1.AppTest` — no running cluster, MinIO, or network is
+`streamlit.testing.v1.AppTest` — no running cluster, Floci, or network is
 required.
 
 ### Ray Job Testing
@@ -384,9 +424,9 @@ import boto3
 
 s3 = boto3.client(
     "s3",
-    endpoint_url="http://localhost:9000",
-    aws_access_key_id="minioadmin",
-    aws_secret_access_key="minioadmin",
+    endpoint_url="http://localhost:4566",
+    aws_access_key_id="test",
+    aws_secret_access_key="test",
 )
 
 # List buckets
@@ -447,7 +487,7 @@ MIT License. See [LICENSE](LICENSE) for details.
 - [Ray](https://ray.io/) for distributed ML computation.
 - [KubeRay](https://docs.ray.io/en/latest/cluster/kubernetes/index.html) for Kubernetes-native Ray deployment.
 - [Streamlit](https://streamlit.io/) for interactive dashboarding.
-- [MinIO](https://min.io/) for S3-compatible object storage.
+- [Floci](https://floci.io/) for S3-compatible object storage.
 - [Prometheus](https://prometheus.io/) for metrics collection.
 - [Grafana](https://grafana.com/) for metrics visualization.
 - [uv](https://docs.astral.sh/uv/) for fast Python package management.

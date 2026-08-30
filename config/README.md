@@ -7,6 +7,10 @@ This directory contains configuration files for the metrics and monitoring stack
 ```
 config/
 ├── prometheus.yml                              # Prometheus scrape configuration
+├── floci/
+│   └── init/
+│       └── ready.d/
+│           └── 01-create-buckets.sh            # Creates the S3 buckets on boot
 └── grafana/
     └── provisioning/
         ├── datasources/
@@ -29,6 +33,29 @@ Configures Prometheus to scrape metrics from Ray:
 To modify the scrape interval or add more targets, edit this file and restart Prometheus:
 ```bash
 docker compose restart prometheus
+```
+
+## Floci Configuration
+
+**File:** `floci/init/ready.d/01-create-buckets.sh`
+
+Floci runs every script under `/etc/floci/init/ready.d` once its S3 API is live;
+`docker-compose.yaml` mounts this directory there read-only. The script creates
+`app-bucket` and `ray-bucket` and makes `app-bucket` publicly readable — the job
+the retired `minio/mc` sidecar used to do.
+
+Two constraints to keep in mind when editing it:
+
+- **It must be idempotent.** Storage is persistent, so the buckets already exist
+  on every boot after the first, and a hook that exits non-zero cancels the rest
+  of the phase.
+- **It relies on the `latest-compat` image**, which is the tag that bundles the
+  AWS CLI and boto3. The plain `floci/floci` image has neither.
+
+Credentials and the endpoint are pre-set inside the container, so `aws` commands
+in the script need no `--endpoint-url` flag. To re-run it:
+```bash
+docker compose restart floci
 ```
 
 ## Grafana Configuration
@@ -92,6 +119,8 @@ You can create dashboards in the Grafana UI (http://localhost:3000) and export t
 
 The following environment variables in `.env` affect these configurations:
 
+- `FLOCI_PORT`: Host port for the Floci S3 API (default: 4566)
+- `FLOCI_BIND_HOST`: Address the Floci port is published on (default: 127.0.0.1)
 - `METRICS_EXPORT_PORT`: Port where Ray exports metrics (default: 8080)
 - `PROMETHEUS_PORT`: Port where Prometheus is accessible (default: 9090)
 - `GRAFANA_PORT`: Port where Grafana is accessible (default: 3000)

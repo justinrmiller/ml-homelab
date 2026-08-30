@@ -202,7 +202,7 @@ def run_resnet_batch_prediction(
     s3_uri: str,
     model_name: str = "resnet50",
     batch_size: int = 32,
-    num_gpus: float = 1.0,
+    num_gpus: float = 0.0,
     aws_access_key_id: str | None = None,
     aws_secret_access_key: str | None = None,
     aws_session_token: str | None = None,
@@ -213,7 +213,9 @@ def run_resnet_batch_prediction(
         s3_uri: S3 URI containing images
         model_name: ResNet model name
         batch_size: Batch size for inference
-        num_gpus: Number of GPUs to use
+        num_gpus: GPUs to reserve per inference actor. Defaults to 0 to match
+            the --num-gpus CLI default; the homelab's Kind cluster has no GPUs,
+            and a non-zero request there is a constraint nothing can fulfill.
         aws_access_key_id: AWS access key ID
         aws_secret_access_key: AWS secret access key
         aws_session_token: AWS session token

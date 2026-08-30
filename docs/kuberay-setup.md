@@ -10,7 +10,7 @@ The KubeRay setup consists of:
 - **Kind cluster**: Local Kubernetes cluster for development
 - **KubeRay operator**: Manages Ray cluster lifecycle
 - **Ray cluster**: Distributed computing cluster for ML workloads
-- **MinIO**: Object storage for data persistence (Docker Compose)
+- **Floci**: S3-compatible object storage for data persistence (Docker Compose)
 - **Prometheus**: Metrics collection (Docker Compose)
 - **Grafana**: Metrics visualization (Docker Compose)
 - **Streamlit**: Web interface for job management
@@ -107,7 +107,7 @@ kubectl port-forward service/raycluster-kuberay-head-svc 8265:8265
 
 # Access services
 # Ray Dashboard: http://localhost:8265/
-# MinIO Console: http://localhost:9001/
+# Floci S3 API: http://localhost:4566/
 # Prometheus: http://localhost:9090/
 # Grafana: http://localhost:3000/ (admin/admin)
 # Streamlit App: http://localhost:8501/
@@ -189,7 +189,7 @@ The `scripts/kuberay-status.sh` script provides comprehensive cluster health che
 - ✅ **KubeRay Operator**: Installation and pod status
 - ✅ **Ray Cluster**: Deployment and pod readiness
 - ✅ **Port Forwarding**: Active port forwarding processes
-- ✅ **MinIO**: Container status and health
+- ✅ **Floci**: Container status and health
 - ✅ **Service Accessibility**: HTTP endpoint availability
 
 ### Example Status Output
@@ -201,7 +201,7 @@ The `scripts/kuberay-status.sh` script provides comprehensive cluster health che
 ✅ KubeRay operator: Installed
 ✅ Ray cluster: Installed
 ✅ Ray dashboard port forward: Active
-✅ MinIO containers: Running
+✅ Floci container: Running
 ✅ Ray dashboard (8265): Port available
 ✅ Streamlit (8501): Port available
 ```

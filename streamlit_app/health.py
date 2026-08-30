@@ -1,9 +1,35 @@
 """Health and capacity checks for the services backing the homelab."""
 
+import os
 import shutil
 import socket
 
-MINIO_PORT = 9000
+DEFAULT_FLOCI_PORT = 4566
+
+
+def port_from_env(name: str, default: int) -> int:
+    """Read a TCP port from the environment.
+
+    Falls back to ``default`` when the variable is unset, empty, or not a
+    number, so a typo in ``.env`` degrades to the default instead of crashing
+    the dashboard on import.
+
+    Args:
+        name: Environment variable to read.
+        default: Port to use when the variable is unusable.
+
+    Returns:
+        The configured port, or ``default``.
+    """
+    try:
+        return int(os.environ[name])
+    except (KeyError, ValueError):
+        return default
+
+
+# docker-compose.yaml publishes ${FLOCI_PORT:-4566}; read the same variable so
+# a non-default port does not leave the dashboard reporting Floci as offline.
+FLOCI_PORT = port_from_env("FLOCI_PORT", DEFAULT_FLOCI_PORT)
 RAY_DASHBOARD_PORT = 8265
 DEFAULT_HOST = "localhost"
 DEFAULT_TIMEOUT = 2.0
@@ -38,8 +64,8 @@ def is_ray_running(host: str = DEFAULT_HOST, port: int = RAY_DASHBOARD_PORT) -> 
     return is_port_open(host, port)
 
 
-def is_minio_running(host: str = DEFAULT_HOST, port: int = MINIO_PORT) -> bool:
-    """Check whether the MinIO S3 endpoint is reachable."""
+def is_floci_running(host: str = DEFAULT_HOST, port: int = FLOCI_PORT) -> bool:
+    """Check whether the Floci S3 endpoint is reachable."""
     return is_port_open(host, port)
 
 
