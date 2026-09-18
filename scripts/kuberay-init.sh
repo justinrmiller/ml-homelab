@@ -326,6 +326,10 @@ head:
       value: "http://localhost:3000"
     - name: RAY_PROMETHEUS_NAME
       value: "Prometheus"
+    # Keep in step with helm/ray-cluster-values.yaml: this block replaces that
+    # file's containerEnv list wholesale, so anything omitted here is lost.
+    - name: RAY_DASHBOARD_ENABLE_PROFILING
+      value: "1"
 EOF
 
 # --force-conflicts is required for re-runs, not optional. The health-probe

@@ -36,7 +36,11 @@ def test_load_runtime_env_yaml_can_override_working_dir(tmp_path):
 
 
 def test_shipped_runtime_env_files_exist_and_parse():
-    for spec in (*job_runner.TRAINING_JOBS, *job_runner.INFERENCE_JOBS):
+    for spec in (
+        *job_runner.TRAINING_JOBS,
+        *job_runner.INFERENCE_JOBS,
+        *job_runner.PROFILING_JOBS,
+    ):
         env = job_runner.load_runtime_env(
             job_runner.DEFAULT_WORKING_DIR, spec.runtime_env_file
         )
@@ -167,9 +171,13 @@ def test_summarize_result(status, succeeded, fragment):
 
 
 def test_job_catalog_entries_are_unique_and_named():
-    specs = (*job_runner.TRAINING_JOBS, *job_runner.INFERENCE_JOBS)
+    specs = (
+        *job_runner.TRAINING_JOBS,
+        *job_runner.INFERENCE_JOBS,
+        *job_runner.PROFILING_JOBS,
+    )
     names = job_runner.job_names(specs)
-    assert names == ["MNIST Tune", "Resnet Inference"]
+    assert names == ["MNIST Tune", "Resnet Inference", "Memray Profile"]
     assert len(set(names)) == len(names)
 
 

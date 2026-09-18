@@ -49,13 +49,19 @@ A local development environment for orchestrating, training, and visualizing mac
 │       │   ├── train_mnist.py   # Training script
 │       │   ├── runtime_env.yaml # Ray runtime environment (pip deps)
 │       │   └── run.sh           # Job submission script
-│       └── resnet_inference/    # ResNet example job
-│           ├── inference.py     # Inference script
-│           └── runtime_env.yaml # Ray runtime environment (pip deps)
+│       ├── resnet_inference/    # ResNet example job
+│       │   ├── inference.py     # Inference script
+│       │   └── runtime_env.yaml # Ray runtime environment (pip deps)
+│       └── memray_profiling/    # Memray worker-profiling job
+│           ├── workload.py      # Synthetic pipeline both examples profile
+│           ├── profile_job.py   # Profiles Ray workers with memray
+│           ├── runtime_env.yaml # Ray runtime environment (pip deps)
+│           └── run.sh           # Job submission script
 ├── tests/                       # Pytest suite (see Testing below)
 ├── .github/workflows/ci.yml     # Lint, type check, and test on every push
 ├── examples/                    # Standalone Ray examples
 │   ├── hello_ray_job.py         # Simple Ray job
+│   ├── memray_example.py        # Local memray profile + flamegraph views
 │   └── ray_job_example.py       # Job submission via the Ray Jobs API
 ├── docker-compose.yaml          # Floci, Prometheus, Grafana orchestration
 ├── kind-config.yaml             # Kind cluster configuration
@@ -256,13 +262,176 @@ For detailed KubeRay setup instructions, see [docs/kuberay-setup.md](docs/kubera
   uv run python -m examples.ray_job_example
   ```
 
+### Memory Profiling with memray
+
+Ray's metrics stack shows *that* a worker's memory grew;
+[memray](https://github.com/bloomberg/memray) shows *which Python code
+allocated it*. Both examples profile the same pipeline, in
+[`workload.py`](streamlit_app/jobs/memray_profiling/workload.py), whose call
+tree is shaped to make a flamegraph worth reading.
+
+Profile locally and render all three views:
+
+```sh
+make memray
+```
+
+This writes `profile.bin` plus three HTML reports to `.memray/`. Open
+`memray-flamegraph-profile.html` first.
+
+#### Reading the flamegraph
+
+A memray flamegraph is **not** a timeline. Nothing about the x-axis means
+"later" — bars are sorted alphabetically, not chronologically. What the axes
+actually mean:
+
+- **Width** is bytes allocated. Wider means more memory, nothing else.
+- **Height** is stack depth. A bar sits directly on top of whatever called it.
+- **A bar's width is the sum of its children**, so a wide bar with one wide
+  child is just a pass-through; the allocation happened further up.
+
+Frames are merged *by stack*, not by function. The same function reached from
+two different callers appears as two separate bars rather than being pooled
+into one. `_decode` is the example here — it is called from both
+`RecordBuffer.append` and `transform_rows`, and shows up under each of them
+separately (288 KB and 4.5 KB respectively). You will only see it once you turn
+on Python-allocator tracing; see "Why some functions are missing" below.
+
+The pipeline is built from three tiers so each view shows something different:
+
+```
+run_workload
+├── ingest_batches        256.0 MB   retained — never freed
+│   ├── RecordBuffer.append → _decode
+│   └── RecordBuffer.compact
+├── build_index            22.8 MB   retained — a 7-frame recursion tower
+│   └── _index_node → _index_node → …
+├── transform_rows         64.0 MB   live at peak, freed on return
+│   ├── _decode            ← same leaf, second parent
+│   └── _widen
+└── summarize_rows                   churn only
+    └── _fold
+```
+
+`build_index` is the one to look at first: because `_index_node` calls itself,
+it draws a narrow tower seven frames tall. Recursion is unmistakable once you
+know that shape.
+
+#### The three views
+
+Each renders the same capture, selecting different allocations. Measured at the
+defaults:
+
+| frame | peak (default) | `--leaks` | `--temporary-allocations` |
+| --- | ---: | ---: | ---: |
+| `ingest_batches` → `compact` | 256.0 MB | 256.0 MB | 2.5 MB |
+| `build_index` → `_index_node` | 22.8 MB | 22.8 MB | — |
+| `transform_rows` → `_widen` | 64.0 MB | — | 2.0 MB |
+
+- **peak** (`memray-flamegraph-profile.html`) — what was live at the high
+  watermark. The three stages sum to the 343 MB peak that `make memray` prints.
+- **leaks** (`memray-leaks-profile.html`) — what was never freed. The 64 MB
+  `transform_rows` block **disappears**: it was live at peak but released on
+  return. Only the two retaining stages survive. This is the view for hunting a
+  real leak, and here it points straight at the module-level `CACHE`.
+- **temporary** (`memray-temporary-profile.html`) — allocations freed almost
+  immediately. The big retained blocks shrink to the churn that produced them.
+
+Render just one with `--view`:
+
+```sh
+uv run python -m examples.memray_example --view leaks
+```
+
+#### Why some functions are missing
+
+`_decode`, `RecordBuffer.append`, and `_fold` allocate on every call, yet none
+of them appear in any view above. They are not being hidden — memray traces
+calls into the system allocator, and CPython serves small objects from pymalloc
+pools it has already claimed. No `malloc`, no record.
+
+Trace pymalloc itself to get them back:
+
+```sh
+uv run python -m examples.memray_example --trace-python-allocators
+```
+
+That takes the same run from 68,066 recorded allocations to 423,941 — a 6x
+jump, all of it small objects — and `_decode`, `append`, and `_fold` appear in
+the temporary view. The cost is a much larger capture and a slower run, which
+is why it is off by default. Reach for it when a function you *know* allocates
+is missing from the graph.
+
+### Profiling Ray Workers
+
+`memray.Tracker` profiles the process it runs in, so wrapping the driver would
+only measure the process handing out work. The
+[profiling job](streamlit_app/jobs/memray_profiling/profile_job.py) opens the
+tracker **inside the Ray task** instead, renders each capture to a
+self-contained HTML report in the worker, and returns the bytes over the object
+store for the driver to write out:
+
+```sh
+make job SCRIPT=streamlit_app/jobs/memray_profiling/profile_job.py \
+     RUNTIME_ENV=streamlit_app/jobs/memray_profiling/runtime_env.yaml
+```
+
+The job log gets one row per worker, plus a flamegraph per task:
+
+```
+     pid          peak    allocations      retained
+---------------------------------------------------
+   11882      200.1 MB         34,042      135.6 MB
+   11881      200.1 MB         34,042      135.6 MB
+
+Profiled 2 task(s) across 2 worker process(es).
+
+  flamegraph: .memray-ray/memray-worker-11882-task0.html
+  flamegraph: .memray-ray/memray-worker-11881-task1.html
+```
+
+Distinct pids are the evidence the tracker ran in the workers rather than the
+driver. Where those HTML files land depends on where the driver runs:
+
+- **Local Ray** (`uv run python streamlit_app/jobs/memray_profiling/profile_job.py`)
+  — the driver is on your machine, so `--output-dir` is a local directory and
+  you can open the reports directly.
+- **Submitted to KubeRay** — the driver runs in a pod, so copy them out:
+  ```sh
+  kubectl cp <ray-worker-pod>:/home/ray/.memray-ray ./.memray-ray
+  ```
+
+#### Viewing profiles from the Ray dashboard
+
+Ray has its own memray integration, which is usually the faster way to look at
+a live worker. It is enabled here via `RAY_DASHBOARD_ENABLE_PROFILING=1` in
+[`helm/ray-cluster-values.yaml`](helm/ray-cluster-values.yaml) (and in
+[`scripts/kuberay-init.sh`](scripts/kuberay-init.sh), which rewrites the head's
+env at deploy time).
+
+Open the Ray dashboard at http://localhost:8265/, find a worker, actor, task,
+or job driver, and use its **Memory profiling** action. You can pick the
+format (flamegraph or table), a duration, and the same `--leaks` / native /
+Python-allocator options described above; the report renders in the browser.
+
+> The dashboard runs `memray` from the *node's* environment, not the job's
+> runtime env, so the Ray image needs it too. The image does not ship memray —
+> install it into a running pod with
+> `kubectl exec <pod> -- pip install memray`, or bake it into a custom image.
+
+> Profiling exposes side-effecting endpoints. It is enabled here only because
+> the dashboard is reached over a local port-forward; do not enable it on a
+> dashboard published to the network without token authentication.
+
+> memray supports Linux and macOS 11+ only; it has no Windows build.
+
 ### Streamlit UI
 
 - All jobs can also be submitted and monitored through the Streamlit dashboard:
   ```sh
   make run
   ```
-  Use the Training and Inference tabs to submit jobs with automatic runtime environment handling.
+  Use the Training, Inference, and Profiling tabs to submit jobs with automatic runtime environment handling.
 
 ### Architecture
 
@@ -313,7 +482,7 @@ You can monitor Ray jobs through:
 2. **Ray Dashboard**: http://localhost:8265/ - Detailed cluster and job metrics
 3. **Grafana**: http://localhost:3000/ - Visual metrics dashboards for Ray cluster performance
 4. **Prometheus**: http://localhost:9090/ - Query and explore raw metrics data
-5. **Job Logs**: Available in the Streamlit UI under the Training/Inference tabs
+5. **Job Logs**: Available in the Streamlit UI under the Training/Inference/Profiling tabs
 
 ### Metrics and Monitoring
 
@@ -344,7 +513,7 @@ Grafana provides visual dashboards for Ray metrics at http://localhost:3000/ (ad
   - View system disk usage
   - Browse and manage S3 buckets and files in Floci
   - Upload and download files from S3 buckets
-  - Submit and monitor Ray jobs for training and inference
+  - Submit and monitor Ray jobs for training, inference, and memory profiling
 
 ---
 
@@ -403,7 +572,7 @@ CI fails rather than letting them drift.
 
 Coverage is configured in `pyproject.toml` and fails below **95%**. The suite
 covers the health checks, the S3 helpers, runtime-environment assembly and job
-polling, both Ray job scripts, and the Streamlit UI itself via
+polling, all three Ray job scripts, and the Streamlit UI itself via
 `streamlit.testing.v1.AppTest` — no running cluster, Floci, or network is
 required.
 
@@ -472,6 +641,7 @@ make stop     # Stop all services
 make status   # Check cluster status
 make job SCRIPT=examples/hello_ray_job.py                           # Submit a simple Ray job
 make job SCRIPT=path/to/job.py RUNTIME_ENV=path/to/env.yaml  # Submit with pip deps
+make memray   # Profile a synthetic pipeline and render all three flamegraph views
 ```
 
 ---
@@ -490,4 +660,5 @@ MIT License. See [LICENSE](LICENSE) for details.
 - [Floci](https://floci.io/) for S3-compatible object storage.
 - [Prometheus](https://prometheus.io/) for metrics collection.
 - [Grafana](https://grafana.com/) for metrics visualization.
+- [memray](https://github.com/bloomberg/memray) for Python memory profiling.
 - [uv](https://docs.astral.sh/uv/) for fast Python package management.

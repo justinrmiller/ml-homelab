@@ -31,6 +31,7 @@ import streamlit as st  # noqa: E402
 from streamlit_app import health, storage  # noqa: E402
 from streamlit_app.job_runner import (  # noqa: E402
     INFERENCE_JOBS,
+    PROFILING_JOBS,
     TRAINING_JOBS,
     JobSpec,
     create_client,
@@ -221,7 +222,7 @@ st.title("ML Homelab Dashboard")
 with st.container():
     render_status_header()
 
-tabs = st.tabs(["S3", "Training", "Inference"])
+tabs = st.tabs(["S3", "Training", "Inference", "Profiling"])
 
 with tabs[0]:
     render_storage_tab()
@@ -231,3 +232,6 @@ with tabs[1]:
 
 with tabs[2]:
     render_job_tab(INFERENCE_JOBS, "Inference Job")
+
+with tabs[3]:
+    render_job_tab(PROFILING_JOBS, "Profiling Job")

@@ -36,7 +36,12 @@ def test_app_renders_without_exceptions(app):
 def test_app_renders_title_and_tabs(app):
     app.run()
     assert "ML Homelab Dashboard" in [heading.value for heading in app.title]
-    assert [tab.label for tab in app.tabs] == ["S3", "Training", "Inference"]
+    assert [tab.label for tab in app.tabs] == [
+        "S3",
+        "Training",
+        "Inference",
+        "Profiling",
+    ]
 
 
 def test_status_header_reports_services_online(app):
@@ -167,6 +172,7 @@ def test_job_expanders_are_rendered(app):
     labels = [expander.label for expander in app.expander]
     assert "Training Job - MNIST Tune" in labels
     assert "Inference Job - Resnet Inference" in labels
+    assert "Profiling Job - Memray Profile" in labels
 
 
 def test_running_a_job_streams_status_and_success(app, monkeypatch):

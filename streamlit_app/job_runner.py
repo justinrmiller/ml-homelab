@@ -64,6 +64,14 @@ INFERENCE_JOBS: tuple[JobSpec, ...] = (
     ),
 )
 
+PROFILING_JOBS: tuple[JobSpec, ...] = (
+    JobSpec(
+        name="Memray Profile",
+        entrypoint="python memray_profiling/profile_job.py",
+        runtime_env_file="memray_profiling/runtime_env.yaml",
+    ),
+)
+
 
 def load_runtime_env(
     working_dir: str = DEFAULT_WORKING_DIR, runtime_env_file: str | None = None

@@ -3,7 +3,7 @@
         floci-up floci-down floci-logs \
         kuberay-start kuberay-stop kuberay-status start stop status \
         ray-setup ray-head ray-worker ray-stop ray-status \
-        job test cov lint format typecheck check hooks dashboards
+        job memray test cov lint format typecheck check hooks dashboards
 
 # torch ships as two mutually exclusive extras (cpu/gpu); this picks the one
 # matching the machine. Override with `make test TORCH_EXTRA=gpu`.
@@ -117,6 +117,11 @@ typecheck:
 
 # Everything CI runs
 check: lint typecheck cov
+
+# Profile a synthetic workload with memray (writes a .bin capture + flamegraph)
+MEMRAY_OUT ?= .memray
+memray:
+	$(UV_RUN) python -m examples.memray_example --output-dir $(MEMRAY_OUT)
 
 # Re-export Ray's Grafana dashboards (run after bumping the Ray version)
 dashboards:
