@@ -15,6 +15,10 @@ airflow.db
 
 data/
 
+# memray captures and generated flamegraphs
+.memray/
+.memray-ray/
+
 # Test and coverage artifacts
 .coverage
 coverage.xml

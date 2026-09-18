@@ -36,6 +36,15 @@ head:
       value: "http://localhost:3000"
     - name: RAY_PROMETHEUS_NAME
       value: "Prometheus"
+    # Turns on the dashboard's "Memory profiling" / "Stack trace" actions,
+    # which run memray against a live worker and render the flamegraph in the
+    # browser. Ray warns that this exposes side-effecting endpoints, so it is
+    # only safe because the dashboard is reached over a local port-forward and
+    # never published to the network. Do not enable it on an exposed dashboard
+    # without token auth. kuberay-init.sh rewrites this whole list at deploy
+    # time, so the same variable is set there too.
+    - name: RAY_DASHBOARD_ENABLE_PROFILING
+      value: "1"
   # requests == limits on purpose. KubeRay derives Ray's advertised --num-cpus
   # and --memory from the *limits*, so a lower request lets Ray believe it owns
   # capacity Kubernetes never guaranteed it, and the node oversubscribes.
@@ -79,6 +88,12 @@ head:
 # replicas and the worker CPU count are overridden at deploy time from
 # NUM_CPU_WORKERS and NUM_CPUS_PER_WORKER in .env; see scripts/kuberay-init.sh.
 worker:
+  # The dashboard profiles worker processes, and the agent that runs memray
+  # lives on the same node as its target, so the workers need the switch too.
+  # Unlike the head's, this list is not overridden at deploy time.
+  containerEnv:
+    - name: RAY_DASHBOARD_ENABLE_PROFILING
+      value: "1"
   replicas: 2
   resources:
     limits:
